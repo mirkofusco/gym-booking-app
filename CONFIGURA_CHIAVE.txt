@@ -1,0 +1,7 @@
+OPENAI_API_KEY=incolla_la_tua_chiave_qui
+ADMIN_PASSWORD=Asia2020$
+
+# Puoi lasciare questi valori cosi per iniziare.
+TRANSCRIBE_MODEL=gpt-4o-mini-transcribe
+SUMMARY_MODEL=gpt-5.4-nano
+PORT=3000

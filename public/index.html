@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>EasyFit Booking</title>
+    <meta name="theme-color" content="#0b0f16" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="app-theme-darkgold user-v2-body">
+    <main>
+      <section id="loginView" class="login-wrap">
+        <div class="login-card-easyfit">
+          <p class="brand-title">EasyFit</p>
+          <p class="brand-subtitle">BOOKING</p>
+          <h1>Accedi alla tua area</h1>
+          <form id="loginForm" class="login-form-easyfit">
+            <label>Username<input id="username" type="text" autocomplete="username" required /></label>
+            <label>Password<input id="password" type="password" autocomplete="current-password" required /></label>
+            <button type="submit" class="easyfit-btn gold">Accedi</button>
+            <p id="loginMsg" class="easyfit-msg"></p>
+          </form>
+          <p class="demo-tip">Demo: martina / Fit12345</p>
+          <a class="admin-link" href="/admin.html">Vai al pannello admin</a>
+        </div>
+      </section>
+
+      <section id="appView" class="hidden user-v2-shell">
+        <header class="user-v2-header">
+          <div class="user-v2-logo">EasyFit</div>
+          <div id="headerTitle" class="user-v2-page-title">Home</div>
+          <button id="headerProfileBtn" class="user-icon-btn" type="button" aria-label="Profilo">👤</button>
+        </header>
+
+        <section id="screenHome" class="user-screen active">
+          <div class="user-v2-hero">
+            <p id="welcomeTitle" class="welcome-title">Ciao</p>
+            <p id="currentDateLabel" class="welcome-sub">Oggi è venerdì 24 aprile</p>
+          </div>
+
+          <section class="day-strip-wrap">
+            <div id="dayStrip" class="day-strip"></div>
+          </section>
+
+          <h2 id="selectedDayHeading" class="screen-title compact">Lezioni di oggi</h2>
+          <p id="coursesMsg" class="easyfit-msg"></p>
+          <section id="coursesList" class="user-courses-list"></section>
+        </section>
+
+        <section id="screenBookings" class="user-screen">
+          <h2 class="screen-title">Le mie prenotazioni</h2>
+          <p class="panel-sub">Puoi annullare fino a 2 ore prima dell'inizio.</p>
+          <p id="bookingsMsg" class="easyfit-msg"></p>
+          <section>
+            <h3 class="screen-title compact">Prossime prenotazioni</h3>
+            <section id="upcomingBookingsList" class="user-courses-list"></section>
+          </section>
+          <section class="history-block">
+            <button id="toggleHistoryBtn" class="easyfit-btn ghost compact" type="button">Mostra storico</button>
+            <section id="bookingsHistoryList" class="history-list hidden"></section>
+          </section>
+        </section>
+
+        <section id="screenProfile" class="user-screen">
+          <h2 class="screen-title">Profilo</h2>
+          <article class="user-v2-card">
+            <p id="profileName"></p>
+            <p class="panel-sub">Gestisci account e notifiche.</p>
+            <div class="profile-actions">
+              <button id="logoutBtn" class="easyfit-btn dark" type="button">Logout</button>
+            </div>
+          </article>
+
+          <article class="user-v2-card">
+            <h3>Attiva notifiche promemoria</h3>
+            <p class="panel-sub">Ricevi promemoria per le lezioni prenotate, se supportato dal browser.</p>
+            <button id="enableNotificationsBtn" class="easyfit-btn gold" type="button">Attiva notifiche</button>
+            <button id="testNotificationBtn" class="easyfit-btn ghost" type="button">Invia notifica test</button>
+            <p id="notificationState" class="easyfit-msg"></p>
+          </article>
+
+          <article class="user-v2-card">
+            <h3>Storico notifiche</h3>
+            <div id="notificationsList" class="user-courses-list compact"></div>
+          </article>
+        </section>
+
+        <section id="screenLessons" class="user-screen">
+          <h2 class="screen-title">Lezioni</h2>
+          <p class="panel-sub">Panoramica lezioni in arrivo.</p>
+          <section id="lessonsList" class="user-courses-list"></section>
+        </section>
+
+        <nav class="user-bottom-nav">
+          <button class="active" data-go="screenHome" type="button"><span>🏠</span><small>Home</small></button>
+          <button data-go="screenLessons" type="button"><span>📅</span><small>Lezioni</small></button>
+          <button data-go="screenBookings" type="button"><span>🎟</span><small>Prenotazioni</small></button>
+          <button data-go="screenProfile" type="button"><span>👤</span><small>Profilo</small></button>
+        </nav>
+      </section>
+    </main>
+
+    <section id="bookingConfirmModal" class="admin-v5-modal hidden" aria-hidden="true">
+      <div class="admin-v5-modal-card">
+        <h3>Confermi la prenotazione?</h3>
+        <p id="confirmCourseName"></p>
+        <p id="confirmCourseDate" class="panel-sub"></p>
+        <div class="row-buttons">
+          <button id="confirmBookingBtn" class="btn btn-primary" type="button">Conferma</button>
+          <button id="closeBookingConfirmBtn" class="btn btn-ghost" type="button">Chiudi</button>
+        </div>
+        <p id="bookingMsg" class="easyfit-msg"></p>
+      </div>
+    </section>
+
+    <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

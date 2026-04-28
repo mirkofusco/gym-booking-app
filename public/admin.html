@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EasyFit Admin</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="admin-v5-body">
+    <main class="admin-v5-shell">
+      <section id="adminLogin" class="admin-v5-login">
+        <p class="brand-title">EasyFit</p>
+        <p class="brand-subtitle">ADMIN DASHBOARD</p>
+        <h1>Accedi</h1>
+        <form id="adminLoginForm" class="form-grid">
+          <label>Username<input id="adminUsername" type="text" required autocomplete="username" /></label>
+          <label>Password<input id="adminPassword" type="password" required autocomplete="current-password" /></label>
+          <button type="submit" class="btn btn-primary">Entra nel pannello</button>
+          <p id="adminLoginMsg" class="message"></p>
+        </form>
+        <p class="demo-tip">Demo: admin / Asia2020$</p>
+      </section>
+
+      <section id="adminApp" class="hidden admin-v5-app">
+        <header class="admin-v5-top">
+          <div>
+            <p class="kicker">EasyFit Studio</p>
+            <h1>Dashboard Admin</h1>
+            <p id="selectedDateLabel" class="admin-v5-sub">Giorno selezionato</p>
+          </div>
+          <div class="admin-v5-top-actions">
+            <button id="quickNewCourseBtn" class="btn btn-primary" type="button">Nuovo corso</button>
+            <a class="btn btn-ghost" href="/">Area utente</a>
+            <button id="adminLogoutBtn" class="btn btn-ghost" type="button">Esci</button>
+          </div>
+        </header>
+
+        <nav class="admin-v5-tabs" aria-label="Sezioni admin">
+          <button type="button" class="tab-btn active" data-tab="today">Oggi</button>
+          <button type="button" class="tab-btn" data-tab="week">Settimana</button>
+          <button type="button" class="tab-btn" data-tab="users">Utenti</button>
+          <button type="button" class="tab-btn" data-tab="courses">Corsi</button>
+        </nav>
+
+        <p id="adminMsg" class="message"></p>
+
+        <section id="tabToday" class="admin-tab active">
+          <section id="kpiGrid" class="admin-v5-kpi"></section>
+
+          <div class="admin-v5-date-nav">
+            <button id="todayPrevBtn" class="btn btn-ghost" type="button">Giorno precedente</button>
+            <button id="todayResetBtn" class="btn btn-ghost" type="button">Oggi</button>
+            <button id="todayNextBtn" class="btn btn-ghost" type="button">Giorno successivo</button>
+          </div>
+
+          <section class="admin-v5-operational">
+            <article class="admin-v5-panel">
+              <div class="section-head">
+                <h3>Timeline Corsi del Giorno</h3>
+                <span id="todayCountPill" class="pill">0 corsi</span>
+              </div>
+              <div id="todayTimelineList" class="admin-v5-timeline"></div>
+            </article>
+
+            <article class="admin-v5-panel">
+              <div class="section-head">
+                <h3>Dettaglio Corso</h3>
+                <button id="clearSelectionBtn" class="btn btn-ghost mini" type="button">Deseleziona</button>
+              </div>
+              <div id="courseDetailsContent" class="admin-v5-detail"></div>
+            </article>
+          </section>
+        </section>
+
+        <section id="tabWeek" class="admin-tab">
+          <div class="admin-v5-date-nav">
+            <button id="weekPrevBtn" class="btn btn-ghost" type="button">← Settimana</button>
+            <button id="weekTodayBtn" class="btn btn-ghost" type="button">Oggi</button>
+            <button id="weekNextBtn" class="btn btn-ghost" type="button">Settimana →</button>
+            <button id="monthPrevBtn" class="btn btn-ghost" type="button">← Mese</button>
+            <button id="monthNextBtn" class="btn btn-ghost" type="button">Mese →</button>
+            <input id="jumpDateInput" type="date" />
+          </div>
+          <p id="weekTitle" class="admin-v5-sub"></p>
+          <div id="weekSummaryList" class="admin-v5-week-list"></div>
+        </section>
+
+        <section id="tabUsers" class="admin-tab">
+          <div class="users-toolbar">
+            <button id="newUserBtn" class="btn btn-primary" type="button">Nuovo utente</button>
+            <input id="usersSearchInput" type="search" placeholder="Cerca nome, username o email" />
+          </div>
+          <p id="usersMsg" class="message"></p>
+          <div id="usersList" class="admin-v5-users-list"></div>
+
+          <section id="userEditorPanel" class="admin-v5-panel hidden">
+            <div class="section-head">
+              <h3 id="userFormTitle">Nuovo utente</h3>
+              <button id="closeUserEditorBtn" class="btn btn-ghost mini" type="button">Chiudi</button>
+            </div>
+            <form id="userForm" class="form-grid form-compact">
+              <input id="userId" type="hidden" />
+              <div class="grid-2">
+                <label>Nome<input id="userFirstName" required /></label>
+                <label>Cognome<input id="userLastName" /></label>
+              </div>
+              <div class="grid-2">
+                <label>Username<input id="userUsername" required /></label>
+                <label>Email<input id="userEmail" type="email" /></label>
+              </div>
+              <div class="grid-2">
+                <label>Password<input id="userPassword" type="password" /></label>
+                <label>Ruolo
+                  <select id="userRole">
+                    <option value="user">Utente</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+              </div>
+              <div class="grid-2">
+                <label>Stato
+                  <select id="userActive">
+                    <option value="true">Attivo</option>
+                    <option value="false">Disattivo</option>
+                  </select>
+                </label>
+                <label>Note<input id="userNotes" /></label>
+              </div>
+              <div class="row-buttons">
+                <button type="submit" class="btn btn-primary">Salva utente</button>
+                <button id="resetUserBtn" type="button" class="btn btn-ghost">Reset</button>
+              </div>
+            </form>
+          </section>
+
+          <section id="userBookingsPanel" class="admin-v5-panel hidden">
+            <div class="section-head">
+              <h3 id="userBookingsTitle">Prenotazioni utente</h3>
+              <button id="closeUserBookingsBtn" class="btn btn-ghost mini" type="button">Chiudi</button>
+            </div>
+            <div id="userBookingsList" class="admin-v5-users-list"></div>
+          </section>
+        </section>
+
+        <section id="tabCourses" class="admin-tab">
+          <nav class="course-manage-tabs" aria-label="Gestione corsi">
+            <button id="courseManageTabTypesBtn" class="course-manage-tab active" type="button" data-course-tab="types">Tipologie corsi</button>
+            <button id="courseManageTabCalendarBtn" class="course-manage-tab" type="button" data-course-tab="calendar">Programmazione calendario</button>
+          </nav>
+
+          <section id="courseManageTabTypes" class="course-manage-panel active">
+            <header class="course-manage-head">
+              <div>
+                <h3>Tipologie corsi</h3>
+                <p>Gestisci i corsi disponibili nella palestra</p>
+              </div>
+              <button id="openCourseTypeModalBtn" class="btn btn-primary" type="button">+ Nuovo corso</button>
+            </header>
+            <p id="courseTemplatesMsg" class="message"></p>
+            <div class="types-table-wrap">
+              <table class="types-table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Capienza</th>
+                    <th>Stato</th>
+                    <th>Ordine</th>
+                    <th>Azioni</th>
+                  </tr>
+                </thead>
+                <tbody id="courseTypesTableBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="courseManageTabCalendar" class="course-manage-panel">
+            <header class="course-manage-head">
+              <div class="calendar-actions-left">
+                <button id="newCourseBtn" class="btn btn-primary" type="button">+ Nuova programmazione</button>
+                <input id="coursesSearchInput" type="search" placeholder="Cerca corso" />
+                <select id="calendarMonthFilter"></select>
+              </div>
+              <div class="calendar-actions-right">
+                <div class="segmented">
+                  <button id="calendarViewWeekBtn" class="active" type="button">Settimana</button>
+                  <button id="calendarViewMonthBtn" type="button">Mese</button>
+                </div>
+                <div class="segmented">
+                  <button id="calendarPrevBtn" type="button">←</button>
+                  <button id="calendarTodayBtn" type="button">Oggi</button>
+                  <button id="calendarNextBtn" type="button">→</button>
+                </div>
+              </div>
+            </header>
+            <p id="calendarPeriodLabel" class="admin-v5-sub"></p>
+            <section id="scheduleCalendarBoard" class="schedule-calendar-board"></section>
+            <p id="calendarBoardMsg" class="message"></p>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <section id="courseEditorModal" class="admin-v5-modal hidden" aria-hidden="true">
+      <div class="admin-v5-modal-card">
+        <div class="section-head">
+          <h3 id="courseFormTitle">Nuova programmazione</h3>
+          <button id="closeCourseModalBtn" class="btn btn-ghost mini" type="button">Chiudi</button>
+        </div>
+        <form id="courseForm" class="form-grid form-compact">
+          <input id="courseId" type="hidden" />
+          <label>Nome corso
+            <select id="courseTemplateSelect" required></select>
+          </label>
+          <div class="grid-2">
+            <label>Data inizio validità<input id="date" type="date" required /></label>
+            <label>Data fine validità<input id="validTo" type="date" required /></label>
+          </div>
+          <div class="grid-2">
+            <label>Capienza<input id="capacity" type="number" min="1" max="50" required /></label>
+            <label>Durata (min)<input id="durationMinutes" type="number" min="20" max="180" required /></label>
+          </div>
+          <div class="grid-2">
+            <label>Inizio<input id="startTime" type="time" required /></label>
+            <label>Fine<input id="endTime" type="time" required /></label>
+          </div>
+          <label>Giorni della settimana
+            <div class="days-picker">
+              <label><input type="checkbox" value="lun" class="dow" />Lun</label>
+              <label><input type="checkbox" value="mar" class="dow" />Mar</label>
+              <label><input type="checkbox" value="mer" class="dow" />Mer</label>
+              <label><input type="checkbox" value="gio" class="dow" />Gio</label>
+              <label><input type="checkbox" value="ven" class="dow" />Ven</label>
+              <label><input type="checkbox" value="sab" class="dow" />Sab</label>
+              <label><input type="checkbox" value="dom" class="dow" />Dom</label>
+            </div>
+          </label>
+          <div class="grid-2">
+            <label>Trainer (opzionale)<input id="trainer" placeholder="Es. Marco" /></label>
+            <label>Override capienza (opzionale)<input id="capacityOverride" type="number" min="1" max="50" /></label>
+          </div>
+          <label>Note (opzionale)<input id="notes" placeholder="Note interne programmazione" /></label>
+          <label class="inline-check"><input id="repeatAuto" type="checkbox" checked /> Ripeti automaticamente</label>
+          <div class="row-buttons">
+            <button type="submit" class="btn btn-primary">Salva programmazione</button>
+            <button id="resetCourseBtn" class="btn btn-ghost" type="button">Reset</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="courseTypeModal" class="admin-v5-modal hidden" aria-hidden="true">
+      <div class="admin-v5-modal-card">
+        <div class="section-head">
+          <h3 id="courseTypeModalTitle">Nuova tipologia</h3>
+          <button id="closeCourseTypeModalBtn" class="btn btn-ghost mini" type="button">Chiudi</button>
+        </div>
+        <form id="courseTemplateForm" class="form-grid form-compact">
+          <input id="courseTemplateId" type="hidden" />
+          <div class="grid-2">
+            <label>Nome corso<input id="templateName" required placeholder="Es. Pilates" /></label>
+            <label>Capienza standard<input id="templateCapacity" type="number" min="1" max="50" required /></label>
+          </div>
+          <div class="grid-2">
+            <label>Colore corso<input id="templateColor" type="color" value="#2b6de5" /></label>
+            <label>Stato
+              <select id="templateActive">
+                <option value="true">Attivo</option>
+                <option value="false">Disattivo</option>
+              </select>
+            </label>
+          </div>
+          <div class="row-buttons">
+            <button type="submit" class="btn btn-primary">Salva</button>
+            <button id="templateResetBtn" class="btn btn-ghost" type="button">Annulla</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <aside id="lessonDrawer" class="lesson-drawer hidden" aria-hidden="true">
+      <div class="lesson-drawer-head">
+        <h3 id="drawerTitle">Lezione</h3>
+        <button id="drawerCloseBtn" class="btn btn-ghost mini" type="button">Chiudi</button>
+      </div>
+      <p id="drawerMeta"></p>
+      <p id="drawerCapacity"></p>
+      <div class="row-buttons">
+        <button id="drawerViewMembersBtn" class="btn btn-ghost mini" type="button">Visualizza iscritti</button>
+        <button id="drawerEditBtn" class="btn btn-ghost mini" type="button">Modifica</button>
+        <button id="drawerDuplicateBtn" class="btn btn-ghost mini" type="button">Duplica</button>
+        <button id="drawerCancelBtn" class="btn btn-ghost danger mini" type="button">Elimina lezione</button>
+      </div>
+      <div id="drawerMembersList" class="admin-v5-users-list"></div>
+    </aside>
+
+    <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+    <script type="module" src="/admin.js"></script>
+  </body>
+</html>
