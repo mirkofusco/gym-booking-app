@@ -331,18 +331,21 @@ function actionForCourse(course) {
 }
 
 function renderBookings() {
-  const now = new Date();
-  const upcoming = myBookings
-    .filter((item) => item.status === "active" && item.course && courseStart(item.course) >= now)
+  const activeBookings = myBookings.filter((item) => item.status === "active" && item.course);
+  const upcoming = activeBookings
+    .filter((item) => isUpcomingCourse(item.course))
     .sort((a, b) => courseStart(a.course) - courseStart(b.course));
+  const activePast = activeBookings
+    .filter((item) => !isUpcomingCourse(item.course))
+    .sort((a, b) => courseStart(b.course) - courseStart(a.course));
   const history = myBookings
-    .filter((item) => item.course && (item.status !== "active" || courseStart(item.course) < now))
+    .filter((item) => item.course && item.status !== "active")
     .sort((a, b) => courseStart(b.course) - courseStart(a.course));
 
-  if (!upcoming.length) {
+  if (!upcoming.length && !activePast.length) {
     upcomingBookingsList.innerHTML = "<p class='panel-sub'>Nessuna prenotazione futura.</p>";
   } else {
-    upcomingBookingsList.innerHTML = upcoming.map((booking) => `
+    upcomingBookingsList.innerHTML = [...upcoming, ...activePast].map((booking) => `
       <article class="course-card-v2 compact-card">
         <h3>${escapeHtml(booking.course.title)}</h3>
         <p>${formatLongDate(booking.course.date)} • ${booking.course.startTime}-${booking.course.endTime}</p>
@@ -686,6 +689,22 @@ function syncBookingsIntoCourses() {
 
 function courseStart(course) {
   return new Date(`${course.date}T${course.startTime}:00`);
+}
+
+function isUpcomingCourse(course) {
+  const today = todayIso();
+  const nowTime = currentTimeHHmm();
+  if (!course?.date || !course?.startTime) return true;
+  if (course.date > today) return true;
+  if (course.date < today) return false;
+  return String(course.startTime).slice(0, 5) >= nowTime;
+}
+
+function currentTimeHHmm() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
 }
 
 function formatHistoryDate(dateKey) {

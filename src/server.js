@@ -456,6 +456,7 @@ async function handleCreateBooking(req, res, user) {
     const course = store.courses.find((entry) => entry.id === courseId);
     if (!course) return { status: 404, error: "Corso non trovato." };
     if (!course.isActive) return { status: 409, error: "Corso non attivo. Contatta la palestra." };
+    if (isCoursePast(course)) return { status: 409, error: "La lezione e gia iniziata o terminata." };
 
     const alreadyBooked = store.bookings.some(
       (entry) => entry.courseId === courseId && entry.userId === user.id && entry.status === "active"
