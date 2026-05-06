@@ -17,7 +17,7 @@ const profileName = document.getElementById("profileName");
 const dayStrip = document.getElementById("dayStrip");
 const coursesList = document.getElementById("coursesList");
 const coursesMsg = document.getElementById("coursesMsg");
-const upcomingBookingsList = document.getElementById("upcomingBookingsList");
+const upcomingBookingsList = document.getElementById("upcomingBookingsList") || document.getElementById("bookingsList");
 const bookingsHistoryList = document.getElementById("bookingsHistoryList");
 const toggleHistoryBtn = document.getElementById("toggleHistoryBtn");
 const bookingsMsg = document.getElementById("bookingsMsg");
@@ -75,10 +75,12 @@ headerProfileBtn.addEventListener("click", () => goTo("screenProfile"));
 logoutBtn.addEventListener("click", logout);
 enableNotificationsBtn.addEventListener("click", enableNotificationsFlow);
 testNotificationBtn.addEventListener("click", sendTestNotification);
-toggleHistoryBtn.addEventListener("click", () => {
-  historyExpanded = !historyExpanded;
-  renderBookings();
-});
+if (toggleHistoryBtn) {
+  toggleHistoryBtn.addEventListener("click", () => {
+    historyExpanded = !historyExpanded;
+    renderBookings();
+  });
+}
 
 bottomNavButtons.forEach((button) => {
   button.addEventListener("click", async () => {
@@ -183,8 +185,8 @@ async function loadCourses() {
 }
 
 async function loadBookings() {
-  upcomingBookingsList.innerHTML = skeletonCards(2);
-  bookingsHistoryList.innerHTML = "";
+  if (upcomingBookingsList) upcomingBookingsList.innerHTML = skeletonCards(2);
+  if (bookingsHistoryList) bookingsHistoryList.innerHTML = "";
   setEasyMsg(bookingsMsg, "Caricamento prenotazioni...", "");
   try {
     const data = await apiFetch("/api/bookings/mine");
@@ -331,6 +333,7 @@ function actionForCourse(course) {
 }
 
 function renderBookings() {
+  if (!upcomingBookingsList) return;
   const activeBookings = myBookings.filter((item) => item.status === "active" && item.course);
   const upcoming = activeBookings
     .filter((item) => isUpcomingCourse(item.course))
@@ -365,6 +368,7 @@ function renderBookings() {
     });
   });
 
+  if (!toggleHistoryBtn || !bookingsHistoryList) return;
   toggleHistoryBtn.textContent = historyExpanded ? "Nascondi storico" : "Mostra storico";
   bookingsHistoryList.classList.toggle("hidden", !historyExpanded);
   if (!historyExpanded) return;
