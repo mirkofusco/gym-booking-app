@@ -410,8 +410,10 @@ async function requireAuth(req, res) {
 async function handleCoursesList(_req, res, user, url) {
   const store = await readStore();
   const filterDate = String(url.searchParams.get("date") || "").trim();
+  const now = new Date();
   const courses = enrichCourses(store, user.id)
     .filter((course) => course.isActive)
+    .filter((course) => !isCoursePast(course, now))
     .filter((course) => !filterDate || course.date === filterDate)
     .sort(sortCourses);
 
