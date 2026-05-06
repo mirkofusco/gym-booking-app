@@ -117,6 +117,8 @@ let courseManageTab = "types";
 let calendarView = "week";
 let calendarAnchorDate = todayIso();
 let drawerCourseId = "";
+let liveRefreshTimer = null;
+let liveRefreshInFlight = false;
 
 if (adminUsernameInput && !adminUsernameInput.value.trim()) adminUsernameInput.value = "admin";
 
@@ -147,6 +149,7 @@ adminLoginForm.addEventListener("submit", async (event) => {
 });
 
 adminLogoutBtn.addEventListener("click", async () => {
+  stopLiveRefresh();
   await apiFetch("/api/auth/logout", { method: "POST" }, false);
   clearSession();
   location.reload();
@@ -402,6 +405,16 @@ window.addEventListener("keydown", (event) => {
   closeLessonDrawer();
 });
 
+document.addEventListener("visibilitychange", () => {
+  if (!session?.token) return;
+  if (document.visibilityState === "visible") {
+    void refreshAdminData();
+    startLiveRefresh();
+  } else {
+    stopLiveRefresh();
+  }
+});
+
 async function bootAdmin() {
   adminLogin.classList.add("hidden");
   adminApp.classList.remove("hidden");
@@ -411,10 +424,43 @@ async function bootAdmin() {
     await refreshAdminData();
     setActiveTab("courses");
     setCourseManageTab("types");
+    startLiveRefresh();
   } catch {
+    stopLiveRefresh();
     clearSession();
     location.reload();
   }
+}
+
+function startLiveRefresh() {
+  stopLiveRefresh();
+  liveRefreshTimer = setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    if (liveRefreshInFlight) return;
+    liveRefreshInFlight = true;
+    refreshAdminData()
+      .then(() => {
+        if (!drawerCourseId) return;
+        const exists = allCourses.some((course) => course.id === drawerCourseId);
+        if (!exists) {
+          closeLessonDrawer();
+          return;
+        }
+        openLessonDrawer(drawerCourseId);
+      })
+      .catch(() => {
+        // silence transient polling errors
+      })
+      .finally(() => {
+        liveRefreshInFlight = false;
+      });
+  }, 5000);
+}
+
+function stopLiveRefresh() {
+  if (!liveRefreshTimer) return;
+  clearInterval(liveRefreshTimer);
+  liveRefreshTimer = null;
 }
 
 function setActiveTab(tab) {
