@@ -120,8 +120,6 @@ let drawerCourseId = "";
 let liveRefreshTimer = null;
 let liveRefreshInFlight = false;
 
-if (adminUsernameInput && !adminUsernameInput.value.trim()) adminUsernameInput.value = "admin";
-
 if (session?.token) {
   void bootAdmin();
 }
