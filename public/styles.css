@@ -3622,3 +3622,128 @@ body {
     font-size: 0.98rem;
   }
 }
+
+
+/* Admin floating panels (users) */
+.admin-v5-floating-panel {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(760px, calc(100vw - 20px));
+  max-height: 88vh;
+  overflow: auto;
+  z-index: 145;
+  box-shadow: 0 28px 58px -30px rgba(16, 28, 57, 0.56);
+}
+
+.admin-v5-floating-panel::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 22, 39, 0.58);
+  z-index: -1;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+
+@media (max-width: 760px) {
+  .admin-v5-shell {
+    width: calc(100% - 10px);
+    padding-top: 10px;
+  }
+
+  .admin-v5-top-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .admin-v5-top-actions .btn,
+  .admin-v5-top-actions a {
+    width: 100%;
+  }
+
+  .tab-btn {
+    min-height: 50px;
+    font-size: 1rem;
+  }
+
+  .timeline-row .time-col {
+    font-size: 1.05rem;
+    min-width: auto;
+  }
+
+  .timeline-row .main-col strong {
+    font-size: 1.12rem;
+  }
+
+  .timeline-row .main-col p,
+  .detail-card p,
+  .detail-user-row p,
+  .user-row p {
+    font-size: 0.98rem;
+  }
+
+  .types-table-wrap {
+    border: 0;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .types-table {
+    width: 100%;
+  }
+
+  .types-table thead {
+    display: none;
+  }
+
+  .types-table tr {
+    display: block;
+    border: 1px solid #dce5f6;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    background: #fff;
+  }
+
+  .types-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 0;
+    white-space: normal;
+    padding: 6px 0;
+    min-height: auto;
+    gap: 10px;
+  }
+
+  .types-table td::before {
+    content: attr(data-label);
+    color: #5c6f90;
+    font-weight: 700;
+    font-size: 0.86rem;
+  }
+
+  .types-table td.type-actions::before {
+    content: "Azioni";
+  }
+
+  .type-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .admin-v5-floating-panel {
+    width: calc(100vw - 12px);
+    max-height: 92vh;
+    border-radius: 14px;
+    padding: 10px;
+  }
+}

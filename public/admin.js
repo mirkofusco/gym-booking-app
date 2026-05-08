@@ -310,6 +310,8 @@ courseForm.addEventListener("submit", async (event) => {
     selectedDate = payload.date || selectedDate;
     closeModal(courseEditorModal);
     await refreshAdminData();
+    const courseOkMsg = courseId ? "Corso aggiornato con successo." : "Corso creato con successo.";
+    setMessage(adminMsg, courseOkMsg, "success");
     showToast(courseId ? "Corso aggiornato" : "Corso creato", "success");
   } catch (error) {
     setMessage(adminMsg, error.message || "Salvataggio corso non riuscito.", "error");
@@ -391,8 +393,11 @@ userForm.addEventListener("submit", async (event) => {
     });
     await Promise.all([loadUsers(), loadDashboard()]);
     renderKpis();
+    const userOkMsg = userId ? "Utente aggiornato con successo." : "Utente creato con successo.";
+    setMessage(usersMsg, userOkMsg, "success");
     showToast(userId ? "Utente aggiornato" : "Utente creato", "success");
     if (!userId) resetUserForm();
+    closeUserEditor();
   } catch (error) {
     setMessage(usersMsg, error.message || "Operazione utente non riuscita.", "error");
   }
@@ -402,6 +407,8 @@ window.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
   closeModal(courseEditorModal);
   closeModal(courseTypeModal);
+  closeUserEditor();
+  closeUserBookings();
   closeLessonDrawer();
 });
 
@@ -584,7 +591,7 @@ function renderCourseDetail() {
       <p>${course.startTime} - ${course.endTime}</p>
       <p>${course.bookedCount}/${course.capacity} iscritti • ${course.spotsLeft} liberi</p>
       <div class="row-buttons">
-        <button class="btn btn-ghost mini" data-detail-edit="${course.id}" type="button">Modifica</button>
+        <button class="btn btn-ghost mini" data-detail-edit="${course.id}" type="button">Modifica orario</button>
         <button class="btn btn-ghost mini" data-detail-dup="${course.id}" type="button">Duplica</button>
         <button class="btn btn-ghost mini" data-detail-toggle="${course.id}" data-next-active="${String(!course.isActive)}" type="button">${course.isActive ? "Disattiva" : "Attiva"}</button>
         <button class="btn btn-ghost danger mini" data-detail-del="${course.id}" type="button">Elimina</button>
@@ -780,7 +787,8 @@ function renderUsersList(users) {
 }
 
 function openUserEditor(user = null) {
-  userEditorPanel.classList.remove("hidden");
+  closeUserBookings();
+  openFloatingPanel(userEditorPanel);
   if (!user) return;
   document.getElementById("userId").value = user.id || "";
   document.getElementById("userFirstName").value = user.firstName || user.name?.split(" ")[0] || "";
@@ -795,7 +803,7 @@ function openUserEditor(user = null) {
 }
 
 function closeUserEditor() {
-  userEditorPanel.classList.add("hidden");
+  closeFloatingPanel(userEditorPanel);
 }
 
 function resetUserForm() {
@@ -811,7 +819,8 @@ async function openUserBookings(userId) {
     const data = await apiFetch(`/api/admin/users/${encodeURIComponent(userId)}/bookings`);
     const bookings = data.bookings || [];
     const user = data.user || {};
-    userBookingsPanel.classList.remove("hidden");
+    closeUserEditor();
+    openFloatingPanel(userBookingsPanel);
     userBookingsTitle.textContent = `Prenotazioni • ${user.name || user.username}`;
     if (!bookings.length) {
       userBookingsList.innerHTML = `<p class="empty">Nessuna prenotazione associata.</p>`;
@@ -852,7 +861,7 @@ async function openUserBookings(userId) {
 }
 
 function closeUserBookings() {
-  userBookingsPanel.classList.add("hidden");
+  closeFloatingPanel(userBookingsPanel);
   userBookingsList.innerHTML = "";
 }
 
@@ -864,14 +873,14 @@ function renderCourseTypesTable() {
 
   courseTypesTableBody.innerHTML = courseTemplates.map((template, index) => `
     <tr>
-      <td>
+      <td data-label="Nome">
         <span class="dot" style="background:${escapeHtml(template.color || "#2b6de5")}"></span>
         ${escapeHtml(template.name)}
       </td>
-      <td>${template.defaultCapacity}</td>
-      <td><span class="status-pill ${template.active ? "badge-available" : "badge-inactive"}">${template.active ? "Attivo" : "Disattivo"}</span></td>
-      <td>${index + 1}</td>
-      <td class="type-actions">
+      <td data-label="Capienza">${template.defaultCapacity}</td>
+      <td data-label="Stato"><span class="status-pill ${template.active ? "badge-available" : "badge-inactive"}">${template.active ? "Attivo" : "Disattivo"}</span></td>
+      <td data-label="Ordine">${index + 1}</td>
+      <td data-label="Azioni" class="type-actions">
         <button class="btn btn-ghost mini" data-template-edit="${template.id}" title="Modifica">✏️</button>
         <button class="btn btn-ghost mini" data-template-toggle="${template.id}" data-next-active="${String(!template.active)}" title="Attiva/disattiva">👁</button>
         <button class="btn btn-ghost mini" data-template-up="${template.id}" ${index === 0 ? "disabled" : ""} title="Sposta su">↑</button>
@@ -1431,6 +1440,20 @@ function openModal(element) {
 function closeModal(element) {
   element.classList.add("hidden");
   element.setAttribute("aria-hidden", "true");
+}
+
+function openFloatingPanel(element) {
+  element.classList.remove("hidden");
+  element.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+
+function closeFloatingPanel(element) {
+  element.classList.add("hidden");
+  element.setAttribute("aria-hidden", "true");
+  if (!document.querySelector(".admin-v5-floating-panel:not(.hidden), .admin-v5-modal:not(.hidden)")) {
+    document.body.classList.remove("modal-open");
+  }
 }
 
 function showToast(text, kind = "success") {
