@@ -547,9 +547,10 @@ function renderTodayTimeline() {
   todayTimelineList.innerHTML = coursesDay
     .map((course) => {
       const badge = statusBadge(course);
+      const color = templateColor(course);
       return `
         <article class="timeline-row ${selectedCourseId === course.id ? "selected" : ""}">
-          <div class="time-col">${course.startTime}</div>
+          <div class="time-col"><span class="dot" style="background:${escapeHtml(color)}"></span>${course.startTime}</div>
           <div class="main-col">
             <strong>${escapeHtml(course.title)}</strong>
             <p>${course.startTime} - ${course.endTime} • ${course.bookedCount}/${course.capacity} iscritti</p>
@@ -1109,7 +1110,7 @@ function renderMonthCalendar() {
 }
 
 function renderMonthPill(course) {
-  const color = templateColor(course.courseTemplateId);
+  const color = templateColor(course);
   return `<button type="button" class="month-pill" style="border-left-color:${escapeHtml(color)}" data-course-open="${course.id}">${escapeHtml(course.title)} ${course.startTime}</button>`;
 }
 
@@ -1122,7 +1123,7 @@ function layoutDayEvents(container, dayCourses) {
     const height = Math.max(52, (event.endMins - event.startMins) * 2);
     const width = 100 / event.totalColumns;
     const left = width * event.col;
-    const color = templateColor(event.courseTemplateId);
+    const color = templateColor(event);
     const node = document.createElement("button");
     node.type = "button";
     node.className = "week-event";
@@ -1200,8 +1201,18 @@ function closeLessonDrawer() {
   lessonDrawer.setAttribute("aria-hidden", "true");
 }
 
-function templateColor(templateId) {
-  return courseTemplates.find((entry) => entry.id === templateId)?.color || "#2b6de5";
+function templateColor(courseOrTemplateId) {
+  if (!courseOrTemplateId) return "#2b6de5";
+  if (typeof courseOrTemplateId === "string") {
+    return courseTemplates.find((entry) => entry.id === courseOrTemplateId)?.color || "#2b6de5";
+  }
+  const course = courseOrTemplateId;
+  const byId = courseTemplates.find((entry) => entry.id === course.courseTemplateId);
+  if (byId?.color) return byId.color;
+  const byName = courseTemplates.find(
+    (entry) => String(entry.name || "").trim().toLowerCase() === String(course.title || "").trim().toLowerCase()
+  );
+  return byName?.color || "#2b6de5";
 }
 
 async function duplicateCourse(courseId) {
@@ -1471,10 +1482,19 @@ function showToast(text, kind = "success") {
   toast.className = `toast ${kind}`;
   toast.textContent = text;
   toastStack.append(toast);
+  if (kind === "success") showCenterConfirm(text);
   setTimeout(() => {
     toast.classList.add("out");
     setTimeout(() => toast.remove(), 220);
   }, 1800);
+}
+
+function showCenterConfirm(text) {
+  const node = document.createElement("div");
+  node.className = "center-confirm";
+  node.textContent = text || "Confermato";
+  document.body.append(node);
+  setTimeout(() => node.remove(), 520);
 }
 
 async function apiFetch(url, options = {}, throwOnError = true) {

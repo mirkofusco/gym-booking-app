@@ -245,6 +245,13 @@ body {
   border-color: #3f4653;
 }
 
+.easyfit-btn.booked {
+  background: linear-gradient(180deg, #21533f, #173e30);
+  color: #ffffff;
+  border-color: #3c8e70;
+  opacity: 1;
+}
+
 .easyfit-btn.ghost {
   background: linear-gradient(180deg, #20252f, #161a22);
   color: #ece6d9;
@@ -1368,8 +1375,9 @@ body {
 }
 
 .badge-full {
-  background: #ffe7e7;
-  color: #a21b2d;
+  background: #ffd9df;
+  color: #7f1025;
+  border: 1px solid #e35a73;
 }
 
 .badge-inactive {
@@ -2055,6 +2063,39 @@ body {
 .toast.success { background: #147a4f; }
 .toast.error { background: #b32741; }
 .toast.out { transform: translateY(-4px); opacity: 0; }
+
+.center-confirm {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  z-index: 9999;
+  border-radius: 999px;
+  border: 1px solid #2f7f63;
+  background: rgba(12, 40, 31, 0.94);
+  color: #e7fff3;
+  padding: 14px 18px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  box-shadow: 0 22px 42px -24px rgba(8, 27, 21, 0.9);
+  pointer-events: none;
+  animation: centerPop 480ms ease forwards;
+}
+
+@keyframes centerPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.99);
+  }
+}
 
 .admin-v4-body .calendar-time-rail span { font-size: 0.7rem; }
 .smart-week-grid {
@@ -3536,8 +3577,9 @@ body {
 }
 
 .badge-full {
-  background: #fdecef;
-  color: #ab2b43;
+  background: #ffdce3;
+  color: #84182d;
+  border: 1px solid #e15d76;
 }
 
 .badge-inactive {

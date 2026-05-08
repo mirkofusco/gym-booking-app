@@ -320,7 +320,7 @@ function actionForCourse(course) {
     const deadline = booking?.cancelDeadline ? formatDateTime(booking.cancelDeadline) : "";
     return `
       <div class="course-action-stack">
-        <button class="easyfit-btn dark" disabled type="button">Prenotato ✓</button>
+        <button class="easyfit-btn booked" disabled type="button">Prenotato ✓</button>
         <small>Limite annullamento superato${deadline ? ` (entro ${deadline})` : ""}</small>
       </div>
     `;
@@ -356,7 +356,7 @@ function renderBookings() {
         ${
           booking.canCancel
             ? `<button class="easyfit-btn ghost" data-cancel-booking="${booking.id}" type="button">Annulla</button>`
-            : `<button class="easyfit-btn dark" disabled type="button">Prenotato ✓</button>`
+            : `<button class="easyfit-btn booked" disabled type="button">Prenotato ✓</button>`
         }
       </article>
     `).join("");
@@ -581,10 +581,19 @@ function showToast(text, kind = "success") {
   toast.className = `toast ${kind}`;
   toast.textContent = text;
   toastStack.append(toast);
+  if (kind === "success") showCenterConfirm(text);
   setTimeout(() => {
     toast.classList.add("out");
     setTimeout(() => toast.remove(), 200);
   }, 1800);
+}
+
+function showCenterConfirm(text) {
+  const node = document.createElement("div");
+  node.className = "center-confirm";
+  node.textContent = text || "Confermato";
+  document.body.append(node);
+  setTimeout(() => node.remove(), 520);
 }
 
 function skeletonCards(n) {
