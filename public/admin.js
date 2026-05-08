@@ -1262,21 +1262,24 @@ function readCourseFormPayload() {
   const trainerValue = document.getElementById("trainer").value.trim();
   const repeatAuto = repeatAutoInput.checked;
   const selected = selectedDays();
+  const dateValue = document.getElementById("date").value;
+  const fallbackDow = dayKeyFromDate(dateValue);
+  const selectedSafe = selected.length ? selected : (fallbackDow ? [fallbackDow] : []);
   const days = repeatAuto ? selected : selected.slice(0, 1);
   return {
     title: selectedOption?.textContent?.trim() || "",
     courseTemplateId: courseTemplateSelect.value,
     description: document.getElementById("notes").value.trim() || "",
     trainer: trainerValue || "Staff",
-    date: document.getElementById("date").value,
-    validFrom: document.getElementById("date").value,
+    date: dateValue,
+    validFrom: dateValue,
     validTo: document.getElementById("validTo").value,
     durationMinutes: Number(document.getElementById("durationMinutes").value),
     startTime: document.getElementById("startTime").value,
     endTime: document.getElementById("endTime").value,
     capacity: Number.isFinite(override) && override > 0 ? override : Number(document.getElementById("capacity").value),
     isActive: true,
-    daysOfWeek: days,
+    daysOfWeek: days.length ? days : selectedSafe,
     notes: document.getElementById("notes").value.trim(),
     internalNotes: ""
   };
@@ -1327,6 +1330,13 @@ function setDays(days) {
   document.querySelectorAll(".dow").forEach((input) => {
     input.checked = set.has(input.value);
   });
+}
+
+function dayKeyFromDate(dateIso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateIso || ""))) return "";
+  const d = new Date(`${dateIso}T00:00:00`);
+  const keys = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
+  return keys[d.getDay()] || "";
 }
 
 function populateCourseTemplateSelect(selectedId = "", includeInactiveSelected = false, fallbackTitle = "") {
