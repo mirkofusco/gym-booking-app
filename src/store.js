@@ -6,8 +6,45 @@ import { COURSE_TYPES, DEFAULT_ADMIN, DEMO_USER, STORE_PATH } from "./config.js"
 import { makeUser } from "./auth.js";
 
 let mutationQueue = Promise.resolve();
+const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
+const USE_DATABASE = Boolean(DATABASE_URL);
+let poolPromise = null;
 
 export async function ensureStore() {
+  if (USE_DATABASE) {
+    const pool = await getPool();
+    await pool.query(`
+      create table if not exists app_store (
+        id smallint primary key,
+        data jsonb not null,
+        updated_at timestamptz not null default now()
+      )
+    `);
+
+    const existing = await readDbStore();
+    if (!existing) {
+      let seed = buildSeedStore();
+      if (existsSync(STORE_PATH)) {
+        try {
+          const raw = await readFile(STORE_PATH, "utf8");
+          const parsed = JSON.parse(raw);
+          const migrated = migrateStore(parsed);
+          seed = migrated.store;
+        } catch {
+          // fallback to seed store
+        }
+      }
+      await writeDbStore(seed);
+      return;
+    }
+
+    const migrated = migrateStore(existing);
+    if (migrated.changed) {
+      await writeDbStore(migrated.store);
+    }
+    return;
+  }
+
   await mkdir(dirname(STORE_PATH), { recursive: true });
 
   if (!existsSync(STORE_PATH)) {
@@ -24,11 +61,20 @@ export async function ensureStore() {
 }
 
 export async function readStore() {
+  if (USE_DATABASE) {
+    const store = await readDbStore();
+    if (!store) return buildSeedStore();
+    return store;
+  }
   const raw = await readFile(STORE_PATH, "utf8");
   return JSON.parse(raw);
 }
 
 export async function writeStore(store) {
+  if (USE_DATABASE) {
+    await writeDbStore(store);
+    return;
+  }
   await writeFile(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
 }
 
@@ -45,6 +91,35 @@ export async function mutateStore(mutator) {
 
   await mutationQueue;
   return output;
+}
+
+async function getPool() {
+  if (!USE_DATABASE) return null;
+  if (!poolPromise) {
+    poolPromise = import("pg").then(({ Pool }) => new Pool({
+      connectionString: DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    }));
+  }
+  return poolPromise;
+}
+
+async function readDbStore() {
+  const pool = await getPool();
+  const result = await pool.query("select data from app_store where id = 1");
+  if (!result.rows.length) return null;
+  return result.rows[0].data;
+}
+
+async function writeDbStore(store) {
+  const pool = await getPool();
+  await pool.query(
+    `insert into app_store (id, data, updated_at)
+     values (1, $1::jsonb, now())
+     on conflict (id)
+     do update set data = excluded.data, updated_at = now()`,
+    [JSON.stringify(store)]
+  );
 }
 
 export function courseTypeFallback(title) {
