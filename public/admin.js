@@ -461,7 +461,7 @@ function startLiveRefresh() {
       .finally(() => {
         liveRefreshInFlight = false;
       });
-  }, 5000);
+  }, 1500);
 }
 
 function stopLiveRefresh() {
@@ -1482,7 +1482,7 @@ async function apiFetch(url, options = {}, throwOnError = true) {
     ...(options.headers || {}),
     authorization: `Bearer ${session?.token || ""}`
   };
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetch(url, { ...options, headers, cache: "no-store" });
   const data = await response.json().catch(() => ({}));
   if (!response.ok && throwOnError) throw new Error(data.error || "Richiesta fallita.");
   return data;
