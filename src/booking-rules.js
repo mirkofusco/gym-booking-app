@@ -1,7 +1,7 @@
 import { APP_CONFIG } from "./config.js";
 
 export function courseDateTime(course) {
-  return new Date(`${course.date}T${course.startTime}:00`);
+  return courseDateTimeRome(course);
 }
 
 export function cancellationDeadline(course) {
@@ -25,4 +25,25 @@ export function displayStatus({ isBooked, spotsLeft, capacity }) {
   const occupancy = occupancyStatus(spotsLeft, capacity);
   if (occupancy === "quasi_pieno") return { code: occupancy, label: "Quasi pieno" };
   return { code: occupancy, label: "Disponibile" };
+}
+
+function courseDateTimeRome(course) {
+  const [year, month, day] = String(course.date || "").split("-").map(Number);
+  const [hours, minutes] = String(course.startTime || "00:00").split(":").map(Number);
+  const utcAssumingSameClock = Date.UTC(year, (month || 1) - 1, day || 1, hours || 0, minutes || 0, 0);
+  const offsetMinutes = romeOffsetMinutes(new Date(utcAssumingSameClock));
+  return new Date(utcAssumingSameClock - offsetMinutes * 60_000);
+}
+
+function romeOffsetMinutes(date) {
+  const formatted = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Rome",
+    timeZoneName: "shortOffset"
+  }).format(date);
+  const match = formatted.match(/GMT([+-]\d{1,2})(?::?(\d{2}))?/i);
+  if (!match) return 60;
+  const hh = Number(match[1] || 0);
+  const mm = Number(match[2] || 0);
+  const sign = hh >= 0 ? 1 : -1;
+  return hh * 60 + sign * mm;
 }

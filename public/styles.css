@@ -2314,6 +2314,28 @@ body {
   border-color: #3d4f77;
 }
 
+#templateColor {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #c6d3ec;
+  border-radius: 10px;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#templateColor::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border-radius: 10px;
+}
+
+#templateColor::-webkit-color-swatch {
+  border: 0;
+  border-radius: 10px;
+}
+
 .admin-v5-app {
   display: grid;
   gap: 12px;

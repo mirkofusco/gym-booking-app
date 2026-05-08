@@ -314,7 +314,8 @@ function renderCourses() {
 function actionForCourse(course) {
   if (course.isBooked) {
     const booking = myBookings.find((item) => item.status === "active" && item.course?.id === course.id);
-    if (booking && booking.canCancel) {
+    const canCancel = booking ? canCancelByCourse(booking.course) : false;
+    if (booking && canCancel) {
       return `<button class="easyfit-btn ghost" data-cancel="${booking.id}" type="button">Annulla prenotazione</button>`;
     }
     const deadline = booking?.cancelDeadline ? formatDateTime(booking.cancelDeadline) : "";
@@ -352,9 +353,9 @@ function renderBookings() {
       <article class="course-card-v2 compact-card">
         <h3>${escapeHtml(booking.course.title)}</h3>
         <p>${formatLongDate(booking.course.date)} • ${booking.course.startTime}-${booking.course.endTime}</p>
-        <p>Stato: ${booking.canCancel ? "Cancellabile" : "Non cancellabile (<2h)"}</p>
+        <p>Stato: ${canCancelByCourse(booking.course) ? "Cancellabile" : "Non cancellabile (<2h)"}</p>
         ${
-          booking.canCancel
+          canCancelByCourse(booking.course)
             ? `<button class="easyfit-btn ghost" data-cancel-booking="${booking.id}" type="button">Annulla</button>`
             : `<button class="easyfit-btn booked" disabled type="button">Prenotato ✓</button>`
         }
@@ -614,6 +615,12 @@ function formatLongDate(dateKey) {
 function formatDateTime(iso) {
   return new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
     .format(new Date(iso));
+}
+
+function canCancelByCourse(course) {
+  if (!course?.date || !course?.startTime) return false;
+  const startMs = new Date(`${course.date}T${course.startTime}:00`).getTime();
+  return Date.now() < (startMs - 2 * 60 * 60 * 1000);
 }
 
 function todayIso() {

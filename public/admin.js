@@ -321,11 +321,12 @@ courseForm.addEventListener("submit", async (event) => {
 courseTemplateForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const templateId = String(courseTemplateIdInput.value || "").trim();
+  const color = normalizeHexColor(templateColorInput.value) || "#2b6de5";
   const payload = {
     name: templateNameInput.value.trim(),
     defaultCapacity: Number(templateCapacityInput.value),
     active: templateActiveInput.value === "true",
-    color: templateColorInput.value
+    color
   };
 
   try {
@@ -900,7 +901,7 @@ function renderCourseTypesTable() {
       templateNameInput.value = template.name;
       templateCapacityInput.value = String(template.defaultCapacity);
       templateActiveInput.value = String(template.active !== false);
-      templateColorInput.value = template.color || "#2b6de5";
+      templateColorInput.value = normalizeHexColor(template.color) || "#2b6de5";
       openModal(courseTypeModal);
     });
   });
@@ -1204,15 +1205,21 @@ function closeLessonDrawer() {
 function templateColor(courseOrTemplateId) {
   if (!courseOrTemplateId) return "#2b6de5";
   if (typeof courseOrTemplateId === "string") {
-    return courseTemplates.find((entry) => entry.id === courseOrTemplateId)?.color || "#2b6de5";
+    return normalizeHexColor(courseTemplates.find((entry) => entry.id === courseOrTemplateId)?.color) || "#2b6de5";
   }
   const course = courseOrTemplateId;
   const byId = courseTemplates.find((entry) => entry.id === course.courseTemplateId);
-  if (byId?.color) return byId.color;
+  if (byId?.color) return normalizeHexColor(byId.color) || "#2b6de5";
   const byName = courseTemplates.find(
     (entry) => String(entry.name || "").trim().toLowerCase() === String(course.title || "").trim().toLowerCase()
   );
-  return byName?.color || "#2b6de5";
+  return normalizeHexColor(byName?.color) || "#2b6de5";
+}
+
+function normalizeHexColor(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw.toLowerCase() : "";
 }
 
 async function duplicateCourse(courseId) {
