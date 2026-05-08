@@ -1112,7 +1112,9 @@ function renderMonthCalendar() {
 
 function renderMonthPill(course) {
   const color = templateColor(course);
-  return `<button type="button" class="month-pill" style="border-left-color:${escapeHtml(color)}" data-course-open="${course.id}">${escapeHtml(course.title)} ${course.startTime}</button>`;
+  const textColor = bestTextColor(color);
+  const bg = toRgba(color, 0.2);
+  return `<button type="button" class="month-pill" style="border-left-color:${escapeHtml(color)};background:${escapeHtml(bg)};color:${escapeHtml(textColor)}" data-course-open="${course.id}">${escapeHtml(course.title)} ${course.startTime}</button>`;
 }
 
 function layoutDayEvents(container, dayCourses) {
@@ -1125,6 +1127,8 @@ function layoutDayEvents(container, dayCourses) {
     const width = 100 / event.totalColumns;
     const left = width * event.col;
     const color = templateColor(event);
+    const textColor = bestTextColor(color);
+    const bg = toRgba(color, 0.22);
     const node = document.createElement("button");
     node.type = "button";
     node.className = "week-event";
@@ -1133,6 +1137,8 @@ function layoutDayEvents(container, dayCourses) {
     node.style.width = `calc(${width}% - 4px)`;
     node.style.left = `calc(${left}% + 2px)`;
     node.style.borderLeftColor = color;
+    node.style.background = bg;
+    node.style.color = textColor;
     node.dataset.courseOpen = event.id;
     node.innerHTML = `
       <strong>${escapeHtml(event.title)}</strong>
@@ -1220,6 +1226,24 @@ function normalizeHexColor(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
   return /^#[0-9a-fA-F]{6}$/.test(raw) ? raw.toLowerCase() : "";
+}
+
+function toRgba(hex, alpha = 1) {
+  const safe = normalizeHexColor(hex) || "#2b6de5";
+  const r = parseInt(safe.slice(1, 3), 16);
+  const g = parseInt(safe.slice(3, 5), 16);
+  const b = parseInt(safe.slice(5, 7), 16);
+  const a = Math.max(0, Math.min(1, Number(alpha) || 1));
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+function bestTextColor(hex) {
+  const safe = normalizeHexColor(hex) || "#2b6de5";
+  const r = parseInt(safe.slice(1, 3), 16);
+  const g = parseInt(safe.slice(3, 5), 16);
+  const b = parseInt(safe.slice(5, 7), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.62 ? "#16223a" : "#f8fbff";
 }
 
 async function duplicateCourse(courseId) {

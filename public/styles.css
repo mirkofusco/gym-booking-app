@@ -2735,7 +2735,8 @@ body {
 .week-event span {
   display: block;
   font-size: 0.74rem;
-  color: #576b8c;
+  color: inherit;
+  opacity: 0.95;
 }
 
 .month-calendar {
