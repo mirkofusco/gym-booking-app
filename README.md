@@ -1,4 +1,4 @@
-# EasyFit Booking App
+# For Fitness Club Booking App
 
 App web per prenotazioni corsi palestra con UX mobile-first.
 

@@ -1,11 +1,11 @@
 {
-  "name": "EasyFit Booking",
-  "short_name": "EasyFit",
+  "name": "For Fitness Club Booking",
+  "short_name": "For Fitness Club",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b0f16",
   "theme_color": "#0b0f16",
-  "description": "Prenotazioni corsi palestra EasyFit",
+  "description": "Prenotazioni corsi palestra For Fitness Club",
   "icons": [
     {
       "src": "/icons/icon.svg",

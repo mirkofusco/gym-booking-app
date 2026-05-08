@@ -422,7 +422,7 @@ function goTo(screenId) {
       screenBookings: "Prenotazioni",
       screenProfile: "Profilo"
     };
-    headerTitle.textContent = titles[screenId] || "EasyFit";
+    headerTitle.textContent = titles[screenId] || "For Fitness Club";
   }
 }
 

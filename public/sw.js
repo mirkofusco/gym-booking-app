@@ -23,9 +23,9 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("push", (event) => {
-  const payload = event.data ? event.data.json() : { title: "EasyFit", body: "Hai un nuovo aggiornamento." };
+  const payload = event.data ? event.data.json() : { title: "For Fitness Club", body: "Hai un nuovo aggiornamento." };
   event.waitUntil(
-    self.registration.showNotification(payload.title || "EasyFit", {
+    self.registration.showNotification(payload.title || "For Fitness Club", {
       body: payload.body || "",
       icon: "/icons/icon.svg",
       badge: "/icons/icon.svg"

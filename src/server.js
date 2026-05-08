@@ -50,7 +50,7 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(APP_CONFIG.port, APP_CONFIG.host, () => {
-  console.log(`Gym Booking pronto su http://${APP_CONFIG.host}:${APP_CONFIG.port}`);
+  console.log(`For Fitness Club pronto su http://${APP_CONFIG.host}:${APP_CONFIG.port}`);
 });
 
 async function routeApi(req, res, url) {
@@ -665,7 +665,7 @@ async function handleSendTestNotification(_req, res, user) {
       userId: user.id,
       type: "test",
       title: "Notifica di test",
-      message: "Promemoria EasyFit attivo correttamente."
+      message: "Promemoria For Fitness Club attivo correttamente."
     });
     return { status: 200, notification };
   });
