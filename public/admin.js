@@ -125,6 +125,8 @@ let liveRefreshInFlight = false;
 let adminEventsSource = null;
 let adminEventsConnected = false;
 let todayUserFilter = "";
+let todayFilterResolvedIds = null;
+let todayFilterResolveTimer = null;
 
 if (session?.token) {
   void bootAdmin();
@@ -174,18 +176,21 @@ tabButtons.forEach((button) => {
 
 todayPrevBtn.addEventListener("click", async () => {
   selectedDate = moveDate(selectedDate, -1);
+  todayFilterResolvedIds = null;
   selectedCourseId = "";
   await refreshAdminData();
 });
 
 todayResetBtn.addEventListener("click", async () => {
   selectedDate = todayIso();
+  todayFilterResolvedIds = null;
   selectedCourseId = "";
   await refreshAdminData();
 });
 
 todayNextBtn.addEventListener("click", async () => {
   selectedDate = moveDate(selectedDate, 1);
+  todayFilterResolvedIds = null;
   selectedCourseId = "";
   await refreshAdminData();
 });
@@ -236,6 +241,13 @@ clearSelectionBtn.addEventListener("click", () => {
 
 todayUserFilterInput?.addEventListener("input", () => {
   todayUserFilter = String(todayUserFilterInput.value || "").trim().toLowerCase();
+  todayFilterResolvedIds = null;
+  if (todayFilterResolveTimer) clearTimeout(todayFilterResolveTimer);
+  if (todayUserFilter.length >= 2) {
+    todayFilterResolveTimer = setTimeout(() => {
+      void resolveTodayUserFilterIds();
+    }, 160);
+  }
   renderTodayTimeline();
 });
 
@@ -591,6 +603,7 @@ function renderTodayTimeline() {
   const visibleCourses = !query
     ? coursesDay
     : coursesDay.filter((course) => {
+        if (todayFilterResolvedIds && todayFilterResolvedIds.has(course.id)) return true;
         const bookedUsers = course.bookedUsers || [];
         return bookedUsers.some((entry) => {
           const username = String(entry.username || "").toLowerCase();
@@ -604,7 +617,10 @@ function renderTodayTimeline() {
     : `${coursesDay.length} corsi`;
 
   if (!visibleCourses.length) {
-    todayTimelineList.innerHTML = `<p class="empty">Nessun corso in questa giornata.</p>`;
+    const msg = query
+      ? "Nessun corso trovato per questo iscritto nella data selezionata."
+      : "Nessun corso in questa giornata.";
+    todayTimelineList.innerHTML = `<p class="empty">${msg}</p>`;
     return;
   }
   todayTimelineList.innerHTML = visibleCourses
@@ -632,6 +648,39 @@ function renderTodayTimeline() {
       renderCourseDetail();
     });
   });
+}
+
+async function resolveTodayUserFilterIds() {
+  const q = todayUserFilter;
+  if (!q || q.length < 2) return;
+  try {
+    const usersData = await apiFetch("/api/admin/users", {}, false);
+    const users = usersData.users || [];
+    const matchedUsers = users.filter((user) => {
+      const username = String(user.username || "").toLowerCase();
+      const name = String(user.name || "").toLowerCase();
+      return username.includes(q) || name.includes(q);
+    });
+    if (!matchedUsers.length) {
+      todayFilterResolvedIds = new Set();
+      renderTodayTimeline();
+      return;
+    }
+    const matchedCourseIds = new Set();
+    await Promise.all(matchedUsers.map(async (user) => {
+      const data = await apiFetch(`/api/admin/users/${encodeURIComponent(user.id)}/bookings`, {}, false);
+      const bookings = data.bookings || [];
+      for (const booking of bookings) {
+        if (booking.status !== "active" || !booking.course) continue;
+        if (booking.course.date !== selectedDate) continue;
+        if (booking.course.id) matchedCourseIds.add(booking.course.id);
+      }
+    }));
+    todayFilterResolvedIds = matchedCourseIds;
+    renderTodayTimeline();
+  } catch {
+    // keep local filtering only
+  }
 }
 
 function renderCourseDetail() {
