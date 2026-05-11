@@ -53,3 +53,29 @@ npm run dev
 3. Verifica badge `Prenotato` e presenza in “Le tue prenotazioni”
 4. Annulla (se oltre la finestra 2h) e verifica stato aggiornato
 5. Login admin e verifica prenotati/annullati nel corso
+
+## Smoke test automatico live (anti-rotture)
+
+Workflow GitHub incluso: `Smoke test live app`.
+
+Controlla automaticamente:
+- login admin
+- dashboard/admin courses
+- login utente
+- elenco corsi
+- prenotazione
+- presenza in "mie prenotazioni"
+- annullamento (se possibile >2h)
+
+### Setup una tantum (GitHub Secrets)
+
+In **Settings -> Secrets and variables -> Actions** crea:
+- `SMOKE_BASE_URL` (es. `https://near-bonita-soluzionidigitaliroma-338c4dc6.koyeb.app`)
+- `SMOKE_ADMIN_USERNAME`
+- `SMOKE_ADMIN_PASSWORD`
+- `SMOKE_USER_USERNAME`
+- `SMOKE_USER_PASSWORD`
+
+Avvio:
+- automatico sui push su `main` (file app)
+- manuale da tab **Actions** con `Run workflow`
