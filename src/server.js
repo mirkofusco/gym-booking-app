@@ -449,26 +449,40 @@ async function handleCreateBooking(req, res, user) {
   if (!body) return;
 
   const courseId = String(body.courseId || "").trim();
-  if (!courseId) {
+  const courseRef = body.courseRef && typeof body.courseRef === "object" ? body.courseRef : null;
+  if (!courseId && !courseRef) {
     sendJson(res, 400, { error: "Corso non valido." });
     return;
   }
 
   const result = await mutateStore((store) => {
-    const course = store.courses.find((entry) => entry.id === courseId);
+    let course = store.courses.find((entry) => entry.id === courseId);
+    if (!course && courseRef) {
+      const refTitle = String(courseRef.title || "").trim().toLowerCase();
+      const refDate = String(courseRef.date || "").trim();
+      const refStart = String(courseRef.startTime || "").trim();
+      const refEnd = String(courseRef.endTime || "").trim();
+      course = store.courses.find((entry) =>
+        entry.isActive !== false
+        && entry.date === refDate
+        && entry.startTime === refStart
+        && (!refEnd || entry.endTime === refEnd)
+        && (!refTitle || String(entry.title || "").trim().toLowerCase() === refTitle)
+      );
+    }
     if (!course) return { status: 404, error: "Corso non trovato." };
     if (!course.isActive) return { status: 409, error: "Corso non attivo. Contatta la palestra." };
     if (isCoursePast(course)) return { status: 409, error: "La lezione e gia iniziata o terminata." };
 
     const alreadyBooked = store.bookings.some(
-      (entry) => entry.courseId === courseId && entry.userId === user.id && entry.status === "active"
+      (entry) => entry.courseId === course.id && entry.userId === user.id && entry.status === "active"
     );
     if (alreadyBooked) {
       return { status: 409, error: "Sei gia prenotato a questo corso." };
     }
 
     const activeCount = store.bookings.filter(
-      (entry) => entry.courseId === courseId && entry.status === "active"
+      (entry) => entry.courseId === course.id && entry.status === "active"
     ).length;
 
     if (activeCount >= course.capacity) {
@@ -479,7 +493,7 @@ async function handleCreateBooking(req, res, user) {
     const booking = {
       id: randomUUID(),
       userId: user.id,
-      courseId,
+      courseId: course.id,
       status: "active",
       createdAt: now,
       cancelledAt: null,
@@ -488,7 +502,7 @@ async function handleCreateBooking(req, res, user) {
 
     store.bookings.push(booking);
     if (Array.isArray(store.waitlists)) {
-      store.waitlists = store.waitlists.filter((item) => !(item.userId === user.id && item.courseId === courseId));
+      store.waitlists = store.waitlists.filter((item) => !(item.userId === user.id && item.courseId === course.id));
     }
     createNotification(store, {
       userId: user.id,

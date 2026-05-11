@@ -48,6 +48,12 @@ let pollTimer = null;
 const seenNotificationIds = new Set();
 
 if (session?.token) void bootApp();
+window.addEventListener("pageshow", () => {
+  const usernameInput = document.getElementById("username");
+  const passwordInput = document.getElementById("password");
+  if (usernameInput) usernameInput.value = "";
+  if (passwordInput) passwordInput.value = "";
+});
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -96,10 +102,10 @@ bottomNavButtons.forEach((button) => {
 confirmBookingBtn.addEventListener("click", async () => {
   if (!selectedCourse) return;
   bookingMsg.textContent = "Conferma in corso...";
-  const tryBook = async (courseId) => apiFetch("/api/bookings", {
+  const tryBook = async (courseId, courseRef) => apiFetch("/api/bookings", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ courseId })
+    body: JSON.stringify({ courseId, courseRef })
   });
   try {
     // Always refresh courses before booking to avoid stale IDs after admin changes.
@@ -111,15 +117,37 @@ confirmBookingBtn.addEventListener("click", async () => {
 
     let data;
     try {
-      data = await tryBook(selectedCourse.id);
+      data = await tryBook(selectedCourse.id, {
+        title: selectedCourse.title,
+        date: selectedCourse.date,
+        startTime: selectedCourse.startTime,
+        endTime: selectedCourse.endTime
+      });
     } catch (firstError) {
       const msg = String(firstError?.message || "").toLowerCase();
-      if (!msg.includes("corso non trovato")) throw firstError;
-      await loadCourses();
+      const recoverable = msg.includes("corso non trovato") || msg.includes("gia prenotato") || msg.includes("già prenotato");
+      if (!recoverable) throw firstError;
+      await Promise.all([loadBookings(), loadCourses()]);
       const refreshed = resolveCurrentCourse(selectedCourse);
-      if (!refreshed) throw firstError;
-      selectedCourse = refreshed;
-      data = await tryBook(refreshed.id);
+      selectedCourse = refreshed || selectedCourse;
+      const alreadyBooked = hasActiveBookingForCourse(selectedCourse);
+      if (alreadyBooked) {
+        bookingMsg.textContent = "Prenotazione già registrata";
+        showToast("Prenotazione completata", "success");
+        closeModal(bookingConfirmModal);
+        renderCourses();
+        renderBookings();
+        renderLessons();
+        goTo("screenBookings");
+        return;
+      }
+      if (!refreshed?.id) throw firstError;
+      data = await tryBook(refreshed.id, {
+        title: refreshed.title,
+        date: refreshed.date,
+        startTime: refreshed.startTime,
+        endTime: refreshed.endTime
+      });
     }
     const booking = data.booking || {};
     const optimistic = {
@@ -725,6 +753,17 @@ function resolveCurrentCourse(course) {
     && c.date === course.date
     && c.startTime === course.startTime
   ) || null;
+}
+
+function hasActiveBookingForCourse(course) {
+  if (!course) return false;
+  return myBookings.some((booking) => {
+    if (booking.status !== "active" || !booking.course) return false;
+    if (course.id && booking.course.id === course.id) return true;
+    return booking.course.title === course.title
+      && booking.course.date === course.date
+      && booking.course.startTime === course.startTime;
+  });
 }
 
 function buildForwardDays(startDate, total = 8) {

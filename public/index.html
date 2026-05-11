@@ -15,9 +15,11 @@
           <p class="brand-title">For Fitness Club</p>
           <p class="brand-subtitle">BOOKING</p>
           <h1>Accedi alla tua area</h1>
-          <form id="loginForm" class="login-form-easyfit">
-            <label>Username<input id="username" type="text" autocomplete="username" required /></label>
-            <label>Password<input id="password" type="password" autocomplete="current-password" required /></label>
+          <form id="loginForm" class="login-form-easyfit" autocomplete="off">
+            <input type="text" name="fake_user" autocomplete="username" style="display:none" tabindex="-1" />
+            <input type="password" name="fake_pass" autocomplete="current-password" style="display:none" tabindex="-1" />
+            <label>Username<input id="username" name="easyfit_username" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" required /></label>
+            <label>Password<input id="password" name="easyfit_password" type="password" autocomplete="new-password" required /></label>
             <button type="submit" class="easyfit-btn gold">Accedi</button>
             <p id="loginMsg" class="easyfit-msg"></p>
           </form>
