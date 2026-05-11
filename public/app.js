@@ -102,6 +102,13 @@ confirmBookingBtn.addEventListener("click", async () => {
     body: JSON.stringify({ courseId })
   });
   try {
+    // Always refresh courses before booking to avoid stale IDs after admin changes.
+    await loadCourses();
+    selectedCourse = resolveCurrentCourse(selectedCourse);
+    if (!selectedCourse?.id) {
+      throw new Error("Corso non trovato. Aggiorna la pagina e riprova.");
+    }
+
     let data;
     try {
       data = await tryBook(selectedCourse.id);
@@ -109,12 +116,7 @@ confirmBookingBtn.addEventListener("click", async () => {
       const msg = String(firstError?.message || "").toLowerCase();
       if (!msg.includes("corso non trovato")) throw firstError;
       await loadCourses();
-      const refreshed = allCourses.find((course) =>
-        course.title === selectedCourse.title
-        && course.date === selectedCourse.date
-        && course.startTime === selectedCourse.startTime
-        && course.endTime === selectedCourse.endTime
-      );
+      const refreshed = resolveCurrentCourse(selectedCourse);
       if (!refreshed) throw firstError;
       selectedCourse = refreshed;
       data = await tryBook(refreshed.id);
@@ -702,6 +704,27 @@ function dateKeyLocal(date) {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
+}
+
+function resolveCurrentCourse(course) {
+  if (!course) return null;
+  // 1) exact id if still present
+  const byId = allCourses.find((c) => c.id === course.id);
+  if (byId) return byId;
+  // 2) exact lesson match
+  const exact = allCourses.find((c) =>
+    c.title === course.title
+    && c.date === course.date
+    && c.startTime === course.startTime
+    && c.endTime === course.endTime
+  );
+  if (exact) return exact;
+  // 3) relaxed match (end time may change on schedule edits)
+  return allCourses.find((c) =>
+    c.title === course.title
+    && c.date === course.date
+    && c.startTime === course.startTime
+  ) || null;
 }
 
 function buildForwardDays(startDate, total = 8) {
