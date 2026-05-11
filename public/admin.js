@@ -7,6 +7,7 @@ const adminMsg = document.getElementById("adminMsg");
 const adminLogoutBtn = document.getElementById("adminLogoutBtn");
 const quickNewCourseBtn = document.getElementById("quickNewCourseBtn");
 const selectedDateLabel = document.getElementById("selectedDateLabel");
+const lastSyncLabel = document.getElementById("lastSyncLabel");
 
 const tabButtons = [...document.querySelectorAll(".tab-btn")];
 const tabSections = {
@@ -519,6 +520,7 @@ function setActiveTab(tab) {
 async function refreshAdminData() {
   await Promise.all([loadDashboard(), loadWeekCourses(), loadCoursesDay(), loadCourseTemplates()]);
   updateDateLabel();
+  updateLastSyncLabel();
   renderKpis();
   renderTodayTimeline();
   renderCourseDetail();
@@ -1495,6 +1497,15 @@ function attendanceLabel(status) {
 function updateDateLabel() {
   selectedDateLabel.textContent = `Giorno selezionato: ${formatDateLong(selectedDate)}`;
   jumpDateInput.value = selectedDate;
+}
+
+function updateLastSyncLabel(now = new Date()) {
+  if (!lastSyncLabel) return;
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  const ss = String(now.getSeconds()).padStart(2, "0");
+  const mode = adminEventsConnected ? "live" : "poll";
+  lastSyncLabel.textContent = `Ultimo aggiornamento: ${hh}:${mm}:${ss} (${mode})`;
 }
 
 function weekBounds(date) {

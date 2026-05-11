@@ -2364,6 +2364,11 @@ body {
   font-size: 0.95rem;
 }
 
+.admin-sync-label {
+  font-size: 0.82rem;
+  opacity: 0.92;
+}
+
 .admin-v5-tabs {
   display: grid;
   gap: 8px;
