@@ -1,4 +1,4 @@
-const CACHE = "easyfit-v3";
+const CACHE = "easyfit-v4";
 const ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/manifest.webmanifest", "/icons/icon.svg"];
 
 self.addEventListener("install", (event) => {
@@ -16,8 +16,15 @@ self.addEventListener("fetch", (event) => {
   const reqUrl = new URL(event.request.url);
   const isSameOrigin = reqUrl.origin === self.location.origin;
   const pathname = reqUrl.pathname || "/";
+  const isApiRequest = pathname.startsWith("/api/");
   const isAdminAsset = pathname.startsWith("/admin");
   const isCriticalAsset = pathname.endsWith(".js") || pathname.endsWith(".css") || pathname.endsWith(".html");
+
+  // API must always be fresh (never serve stale cache for bookings/admin data).
+  if (isSameOrigin && isApiRequest) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   // Always prefer fresh network for admin and critical assets to avoid stale UI logic.
   if (isSameOrigin && (isAdminAsset || isCriticalAsset)) {

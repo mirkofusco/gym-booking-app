@@ -1679,11 +1679,15 @@ function showCenterConfirm(text) {
 }
 
 async function apiFetch(url, options = {}, throwOnError = true) {
+  const isGet = String(options.method || "GET").toUpperCase() === "GET";
+  const finalUrl = isGet
+    ? `${url}${url.includes("?") ? "&" : "?"}_ts=${Date.now()}`
+    : url;
   const headers = {
     ...(options.headers || {}),
     authorization: `Bearer ${session?.token || ""}`
   };
-  const response = await fetch(url, { ...options, headers, cache: "no-store" });
+  const response = await fetch(finalUrl, { ...options, headers, cache: "no-store" });
   const data = await response.json().catch(() => ({}));
   if (response.status === 401) {
     stopAdminEventsStream();
