@@ -96,12 +96,29 @@ bottomNavButtons.forEach((button) => {
 confirmBookingBtn.addEventListener("click", async () => {
   if (!selectedCourse) return;
   bookingMsg.textContent = "Conferma in corso...";
+  const tryBook = async (courseId) => apiFetch("/api/bookings", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ courseId })
+  });
   try {
-    const data = await apiFetch("/api/bookings", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ courseId: selectedCourse.id })
-    });
+    let data;
+    try {
+      data = await tryBook(selectedCourse.id);
+    } catch (firstError) {
+      const msg = String(firstError?.message || "").toLowerCase();
+      if (!msg.includes("corso non trovato")) throw firstError;
+      await loadCourses();
+      const refreshed = allCourses.find((course) =>
+        course.title === selectedCourse.title
+        && course.date === selectedCourse.date
+        && course.startTime === selectedCourse.startTime
+        && course.endTime === selectedCourse.endTime
+      );
+      if (!refreshed) throw firstError;
+      selectedCourse = refreshed;
+      data = await tryBook(refreshed.id);
+    }
     const booking = data.booking || {};
     const optimistic = {
       id: booking.id || `tmp-${selectedCourse.id}`,
@@ -128,7 +145,8 @@ confirmBookingBtn.addEventListener("click", async () => {
     goTo("screenBookings");
   } catch (error) {
     bookingMsg.textContent = error.message || "Prenotazione non riuscita";
-    if ((error.message || "").toLowerCase().includes("gia prenotato")) {
+    const m = String(error.message || "").toLowerCase();
+    if (m.includes("gia prenotato") || m.includes("già prenotato")) {
       await Promise.all([loadBookings(), loadCourses()]);
     }
   }
