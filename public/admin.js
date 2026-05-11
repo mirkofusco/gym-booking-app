@@ -25,6 +25,7 @@ const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const todayPrevBtn = document.getElementById("todayPrevBtn");
 const todayResetBtn = document.getElementById("todayResetBtn");
 const todayNextBtn = document.getElementById("todayNextBtn");
+const todayJumpDateInput = document.getElementById("todayJumpDateInput");
 const dayFocusBadge = document.getElementById("dayFocusBadge");
 const todayUserFilterInput = document.getElementById("todayUserFilterInput");
 
@@ -190,6 +191,15 @@ todayResetBtn.addEventListener("click", async () => {
 
 todayNextBtn.addEventListener("click", async () => {
   selectedDate = moveDate(selectedDate, 1);
+  todayFilterResolvedIds = null;
+  selectedCourseId = "";
+  await refreshAdminData();
+});
+
+todayJumpDateInput?.addEventListener("change", async () => {
+  const value = String(todayJumpDateInput.value || "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+  selectedDate = value;
   todayFilterResolvedIds = null;
   selectedCourseId = "";
   await refreshAdminData();
@@ -1569,6 +1579,7 @@ function attendanceLabel(status) {
 function updateDateLabel() {
   selectedDateLabel.textContent = `Giorno selezionato: ${formatDateLong(selectedDate)}`;
   todayResetBtn.textContent = formatDateCompact(selectedDate);
+  if (todayJumpDateInput) todayJumpDateInput.value = selectedDate;
   jumpDateInput.value = selectedDate;
   updateDayNavigationState();
 }
