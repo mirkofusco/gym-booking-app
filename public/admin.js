@@ -119,6 +119,8 @@ let calendarAnchorDate = todayIso();
 let drawerCourseId = "";
 let liveRefreshTimer = null;
 let liveRefreshInFlight = false;
+let adminEventsSource = null;
+let adminEventsConnected = false;
 
 if (session?.token) {
   void bootAdmin();
@@ -147,6 +149,7 @@ adminLoginForm.addEventListener("submit", async (event) => {
 });
 
 adminLogoutBtn.addEventListener("click", async () => {
+  stopAdminEventsStream();
   stopLiveRefresh();
   await apiFetch("/api/auth/logout", { method: "POST" }, false);
   clearSession();
@@ -414,9 +417,11 @@ window.addEventListener("keydown", (event) => {
 document.addEventListener("visibilitychange", () => {
   if (!session?.token) return;
   if (document.visibilityState === "visible") {
+    if (!adminEventsConnected) startAdminEventsStream();
     void refreshAdminData();
     startLiveRefresh();
   } else {
+    stopAdminEventsStream();
     stopLiveRefresh();
   }
 });
@@ -430,8 +435,10 @@ async function bootAdmin() {
     await refreshAdminData();
     setActiveTab("courses");
     setCourseManageTab("types");
+    startAdminEventsStream();
     startLiveRefresh();
   } catch {
+    stopAdminEventsStream();
     stopLiveRefresh();
     clearSession();
     location.reload();
@@ -441,6 +448,7 @@ async function bootAdmin() {
 function startLiveRefresh() {
   stopLiveRefresh();
   liveRefreshTimer = setInterval(() => {
+    if (adminEventsConnected) return;
     if (document.visibilityState !== "visible") return;
     if (liveRefreshInFlight) return;
     liveRefreshInFlight = true;
@@ -460,13 +468,45 @@ function startLiveRefresh() {
       .finally(() => {
         liveRefreshInFlight = false;
       });
-  }, 1500);
+  }, 5000);
 }
 
 function stopLiveRefresh() {
   if (!liveRefreshTimer) return;
   clearInterval(liveRefreshTimer);
   liveRefreshTimer = null;
+}
+
+function startAdminEventsStream() {
+  stopAdminEventsStream();
+  if (!session?.token || typeof EventSource === "undefined") return;
+  const url = `/api/admin/events?token=${encodeURIComponent(session.token)}`;
+  adminEventsSource = new EventSource(url);
+
+  adminEventsSource.addEventListener("ping", () => {
+    adminEventsConnected = true;
+  });
+
+  adminEventsSource.addEventListener("booking_changed", () => {
+    if (liveRefreshInFlight) return;
+    liveRefreshInFlight = true;
+    refreshAdminData()
+      .catch(() => {})
+      .finally(() => {
+        liveRefreshInFlight = false;
+      });
+  });
+
+  adminEventsSource.onerror = () => {
+    adminEventsConnected = false;
+  };
+}
+
+function stopAdminEventsStream() {
+  adminEventsConnected = false;
+  if (!adminEventsSource) return;
+  adminEventsSource.close();
+  adminEventsSource = null;
 }
 
 function setActiveTab(tab) {

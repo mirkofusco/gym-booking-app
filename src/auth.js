@@ -92,6 +92,10 @@ export function readAuthToken(req) {
 
 export function getSessionFromRequest(req) {
   const token = readAuthToken(req);
+  return getSessionFromToken(token);
+}
+
+export function getSessionFromToken(token) {
   if (!token) return null;
   const session = sessions.get(token);
   if (!session) return null;

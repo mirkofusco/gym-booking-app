@@ -7,6 +7,7 @@ import {
   createSession,
   deleteSession,
   getSessionFromRequest,
+  getSessionFromToken,
   hashPassword,
   makeUser,
   sanitizeUser,
@@ -26,6 +27,7 @@ const contentTypes = {
 
 await ensureStore();
 startNotificationScheduler();
+const adminSseClients = new Set();
 
 const server = createServer(async (req, res) => {
   try {
@@ -54,6 +56,11 @@ server.listen(APP_CONFIG.port, APP_CONFIG.host, () => {
 });
 
 async function routeApi(req, res, url) {
+  if (req.method === "GET" && url.pathname === "/api/admin/events") {
+    await handleAdminEventsStream(req, res, url);
+    return;
+  }
+
   if (req.method === "POST" && url.pathname === "/api/auth/login") {
     await handleLogin(req, res);
     return;
@@ -287,6 +294,58 @@ async function routeApi(req, res, url) {
   }
 
   sendJson(res, 404, { error: "Endpoint non trovato." });
+}
+
+async function handleAdminEventsStream(req, res, url) {
+  const tokenFromQuery = String(url.searchParams.get("token") || "").trim();
+  const session = getSessionFromRequest(req) || getSessionFromToken(tokenFromQuery);
+  if (!session) {
+    sendJson(res, 401, { error: "Sessione scaduta. Effettua di nuovo il login." });
+    return;
+  }
+  const store = await readStore();
+  const user = store.users.find((entry) => entry.id === session.userId && entry.active !== false);
+  if (!user || user.role !== "admin") {
+    sendJson(res, 403, { error: "Accesso consentito solo all'amministratore." });
+    return;
+  }
+
+  res.writeHead(200, {
+    "content-type": "text/event-stream; charset=utf-8",
+    "cache-control": "no-cache, no-store, must-revalidate",
+    connection: "keep-alive"
+  });
+  res.write(`event: ping\n`);
+  res.write(`data: {"ts":"${new Date().toISOString()}"}\n\n`);
+
+  adminSseClients.add(res);
+  const heartbeat = setInterval(() => {
+    if (res.destroyed || res.writableEnded) return;
+    res.write(`event: ping\n`);
+    res.write(`data: {"ts":"${new Date().toISOString()}"}\n\n`);
+  }, 25000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    adminSseClients.delete(res);
+  });
+}
+
+function broadcastAdminRealtime(type = "data_changed", payload = {}) {
+  if (!adminSseClients.size) return;
+  const data = JSON.stringify({
+    type,
+    ts: new Date().toISOString(),
+    ...payload
+  });
+  for (const client of adminSseClients) {
+    if (client.destroyed || client.writableEnded) {
+      adminSseClients.delete(client);
+      continue;
+    }
+    client.write(`event: ${type}\n`);
+    client.write(`data: ${data}\n\n`);
+  }
 }
 
 async function handleLogin(req, res) {
@@ -524,6 +583,9 @@ async function handleCreateBooking(req, res, user) {
   });
 
   sendJson(res, result.status, result.booking ? result : { error: result.error });
+  if (result.booking) {
+    broadcastAdminRealtime("booking_changed", { courseId: result.booking.courseId });
+  }
 }
 
 async function handleCancelBooking(_req, res, user, bookingId) {
@@ -559,6 +621,9 @@ async function handleCancelBooking(_req, res, user, bookingId) {
   });
 
   sendJson(res, result.status, result.ok ? result : { error: result.error, cancelDeadline: result.cancelDeadline || null });
+  if (result.ok) {
+    broadcastAdminRealtime("booking_changed", { bookingId });
+  }
 }
 
 async function handleJoinWaitlist(req, res, user) {
@@ -1272,6 +1337,9 @@ async function handleAdminRemoveBooking(_req, res, bookingId) {
   });
 
   sendJson(res, result.status, result.ok ? { ok: true } : { error: result.error });
+  if (result.ok) {
+    broadcastAdminRealtime("booking_changed", { bookingId });
+  }
 }
 
 async function handleAdminAttendance(req, res, bookingId) {
