@@ -2,6 +2,8 @@ name: Smoke test live app
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * *"
   push:
     branches: [main]
     paths:
