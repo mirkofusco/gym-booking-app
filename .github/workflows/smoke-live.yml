@@ -19,22 +19,21 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-      uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: "22"
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
       - name: Install deps
-      run: npm ci
+        run: npm ci
 
       - name: Run live smoke tests
-      env:
-        SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
-        SMOKE_ADMIN_USERNAME: ${{ secrets.SMOKE_ADMIN_USERNAME }}
-        SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
-        SMOKE_USER_USERNAME: ${{ secrets.SMOKE_USER_USERNAME }}
-        SMOKE_USER_PASSWORD: ${{ secrets.SMOKE_USER_PASSWORD }}
-      run: npm run smoke:live
-
+        env:
+          SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+          SMOKE_ADMIN_USERNAME: ${{ secrets.SMOKE_ADMIN_USERNAME }}
+          SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
+          SMOKE_USER_USERNAME: ${{ secrets.SMOKE_USER_USERNAME }}
+          SMOKE_USER_PASSWORD: ${{ secrets.SMOKE_USER_PASSWORD }}
+        run: npm run smoke:live
