@@ -25,6 +25,7 @@ const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const todayPrevBtn = document.getElementById("todayPrevBtn");
 const todayResetBtn = document.getElementById("todayResetBtn");
 const todayNextBtn = document.getElementById("todayNextBtn");
+const dayFocusBadge = document.getElementById("dayFocusBadge");
 
 const weekPrevBtn = document.getElementById("weekPrevBtn");
 const weekTodayBtn = document.getElementById("weekTodayBtn");
@@ -1497,6 +1498,7 @@ function attendanceLabel(status) {
 function updateDateLabel() {
   selectedDateLabel.textContent = `Giorno selezionato: ${formatDateLong(selectedDate)}`;
   jumpDateInput.value = selectedDate;
+  updateDayNavigationState();
 }
 
 function updateLastSyncLabel(now = new Date()) {
@@ -1506,6 +1508,35 @@ function updateLastSyncLabel(now = new Date()) {
   const ss = String(now.getSeconds()).padStart(2, "0");
   const mode = adminEventsConnected ? "live" : "poll";
   lastSyncLabel.textContent = `Ultimo aggiornamento: ${hh}:${mm}:${ss} (${mode})`;
+}
+
+function updateDayNavigationState() {
+  const t = todayIso();
+  const prev = moveDate(t, -1);
+  const next = moveDate(t, 1);
+  const delta = dateDiffDays(selectedDate, t);
+  const isToday = selectedDate === t;
+  const isYesterday = selectedDate === prev;
+  const isTomorrow = selectedDate === next;
+
+  todayResetBtn.classList.toggle("is-active-day", isToday);
+  todayPrevBtn.classList.toggle("is-active-day", isYesterday);
+  todayNextBtn.classList.toggle("is-active-day", isTomorrow);
+
+  if (!dayFocusBadge) return;
+  let label = `Data: ${formatDateLong(selectedDate)}`;
+  if (isToday) label = `Stai guardando: OGGI • ${formatDateLong(selectedDate)}`;
+  else if (isYesterday) label = `Stai guardando: IERI • ${formatDateLong(selectedDate)}`;
+  else if (isTomorrow) label = `Stai guardando: DOMANI • ${formatDateLong(selectedDate)}`;
+  else if (delta < 0) label = `Stai guardando: ${Math.abs(delta)} giorni fa • ${formatDateLong(selectedDate)}`;
+  else if (delta > 0) label = `Stai guardando: tra ${delta} giorni • ${formatDateLong(selectedDate)}`;
+  dayFocusBadge.textContent = label;
+}
+
+function dateDiffDays(a, b) {
+  const da = new Date(`${a}T00:00:00`).getTime();
+  const db = new Date(`${b}T00:00:00`).getTime();
+  return Math.round((da - db) / 86400000);
 }
 
 function weekBounds(date) {
