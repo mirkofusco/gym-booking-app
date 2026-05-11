@@ -1573,6 +1573,15 @@ async function apiFetch(url, options = {}, throwOnError = true) {
   };
   const response = await fetch(url, { ...options, headers, cache: "no-store" });
   const data = await response.json().catch(() => ({}));
+  if (response.status === 401) {
+    stopAdminEventsStream();
+    stopLiveRefresh();
+    clearSession();
+    setMessage(adminLoginMsg, "Sessione scaduta. Effettua di nuovo il login.", "error");
+    adminApp.classList.add("hidden");
+    adminLogin.classList.remove("hidden");
+    throw new Error(data.error || "Sessione scaduta.");
+  }
   if (!response.ok && throwOnError) throw new Error(data.error || "Richiesta fallita.");
   return data;
 }

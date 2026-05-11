@@ -24,6 +24,7 @@ export const APP_CONFIG = {
   host: process.env.HOST || "0.0.0.0",
   port: Number(process.env.PORT || 3000),
   sessionTtlMs: Number(process.env.SESSION_TTL_MS || 12 * 60 * 60 * 1000),
+  sessionSecret: process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD || "for-fitness-session-secret",
   cancellationWindowHours: Number(process.env.CANCELLATION_WINDOW_HOURS || 2),
   maxJsonBytes: Number(process.env.MAX_JSON_BYTES || 512 * 1024),
   timezone: process.env.APP_TIMEZONE || "Europe/Rome"
