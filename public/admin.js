@@ -26,6 +26,7 @@ const todayPrevBtn = document.getElementById("todayPrevBtn");
 const todayResetBtn = document.getElementById("todayResetBtn");
 const todayNextBtn = document.getElementById("todayNextBtn");
 const dayFocusBadge = document.getElementById("dayFocusBadge");
+const todayUserFilterInput = document.getElementById("todayUserFilterInput");
 
 const weekPrevBtn = document.getElementById("weekPrevBtn");
 const weekTodayBtn = document.getElementById("weekTodayBtn");
@@ -123,6 +124,7 @@ let liveRefreshTimer = null;
 let liveRefreshInFlight = false;
 let adminEventsSource = null;
 let adminEventsConnected = false;
+let todayUserFilter = "";
 
 if (session?.token) {
   void bootAdmin();
@@ -230,6 +232,11 @@ clearSelectionBtn.addEventListener("click", () => {
   selectedCourseId = "";
   renderTodayTimeline();
   renderCourseDetail();
+});
+
+todayUserFilterInput?.addEventListener("input", () => {
+  todayUserFilter = String(todayUserFilterInput.value || "").trim().toLowerCase();
+  renderTodayTimeline();
 });
 
 newCourseBtn.addEventListener("click", () => {
@@ -580,12 +587,27 @@ function renderKpis() {
 }
 
 function renderTodayTimeline() {
-  todayCountPill.textContent = `${coursesDay.length} corsi`;
-  if (!coursesDay.length) {
+  const query = todayUserFilter;
+  const visibleCourses = !query
+    ? coursesDay
+    : coursesDay.filter((course) => {
+        const bookedUsers = course.bookedUsers || [];
+        return bookedUsers.some((entry) => {
+          const username = String(entry.username || "").toLowerCase();
+          const name = String(entry.name || "").toLowerCase();
+          return username.includes(query) || name.includes(query);
+        });
+      });
+
+  todayCountPill.textContent = query
+    ? `${visibleCourses.length}/${coursesDay.length} corsi`
+    : `${coursesDay.length} corsi`;
+
+  if (!visibleCourses.length) {
     todayTimelineList.innerHTML = `<p class="empty">Nessun corso in questa giornata.</p>`;
     return;
   }
-  todayTimelineList.innerHTML = coursesDay
+  todayTimelineList.innerHTML = visibleCourses
     .map((course) => {
       const badge = statusBadge(course);
       const color = templateColor(course);
