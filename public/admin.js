@@ -1568,6 +1568,7 @@ function attendanceLabel(status) {
 
 function updateDateLabel() {
   selectedDateLabel.textContent = `Giorno selezionato: ${formatDateLong(selectedDate)}`;
+  todayResetBtn.textContent = formatDateCompact(selectedDate);
   jumpDateInput.value = selectedDate;
   updateDayNavigationState();
 }
@@ -1739,6 +1740,16 @@ function formatDateLong(date) {
     month: "long",
     year: "numeric"
   }).format(new Date(`${date}T00:00:00`));
+}
+
+function formatDateCompact(date) {
+  return new Intl.DateTimeFormat("it-IT", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short"
+  })
+    .format(new Date(`${date}T00:00:00`))
+    .replaceAll(".", "");
 }
 
 function formatDateShort(date) {
