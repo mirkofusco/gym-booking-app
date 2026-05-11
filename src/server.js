@@ -1835,8 +1835,18 @@ async function serveStatic(pathname, res) {
 
   try {
     const file = await readFile(filePath);
-    const contentType = contentTypes[extname(filePath)] || "application/octet-stream";
-    res.writeHead(200, { "content-type": contentType });
+    const ext = extname(filePath);
+    const contentType = contentTypes[ext] || "application/octet-stream";
+    const isCriticalAsset = [".html", ".js", ".css", ".webmanifest"].includes(ext) || filePath.endsWith("/sw.js");
+    const cacheControl = isCriticalAsset
+      ? "no-store, no-cache, must-revalidate, proxy-revalidate"
+      : "public, max-age=3600";
+    res.writeHead(200, {
+      "content-type": contentType,
+      "cache-control": cacheControl,
+      pragma: "no-cache",
+      expires: "0"
+    });
     res.end(file);
   } catch {
     sendJson(res, 404, { error: "Risorsa non trovata." });
