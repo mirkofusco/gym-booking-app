@@ -448,7 +448,6 @@ async function bootAdmin() {
 function startLiveRefresh() {
   stopLiveRefresh();
   liveRefreshTimer = setInterval(() => {
-    if (adminEventsConnected) return;
     if (document.visibilityState !== "visible") return;
     if (liveRefreshInFlight) return;
     liveRefreshInFlight = true;
