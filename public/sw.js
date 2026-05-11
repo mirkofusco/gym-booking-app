@@ -1,4 +1,4 @@
-const CACHE = "easyfit-v2";
+const CACHE = "easyfit-v3";
 const ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/manifest.webmanifest", "/icons/icon.svg"];
 
 self.addEventListener("install", (event) => {
@@ -13,12 +13,35 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  const reqUrl = new URL(event.request.url);
+  const isSameOrigin = reqUrl.origin === self.location.origin;
+  const pathname = reqUrl.pathname || "/";
+  const isAdminAsset = pathname.startsWith("/admin");
+  const isCriticalAsset = pathname.endsWith(".js") || pathname.endsWith(".css") || pathname.endsWith(".html");
+
+  // Always prefer fresh network for admin and critical assets to avoid stale UI logic.
+  if (isSameOrigin && (isAdminAsset || isCriticalAsset)) {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+          return res;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first for non-critical assets.
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request).then((res) => {
-      const copy = res.clone();
-      caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-      return res;
-    }).catch(() => cached))
+    caches.match(event.request).then((cached) =>
+      cached || fetch(event.request).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+        return res;
+      }).catch(() => cached)
+    )
   );
 });
 
