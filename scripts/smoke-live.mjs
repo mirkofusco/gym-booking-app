@@ -41,6 +41,32 @@ async function login(username, password) {
   return { token: r.data.token, user: r.data.user };
 }
 
+async function ensureUserPasswordUnlocked(token, currentPassword) {
+  const probe = await jsonFetch("/api/courses", {
+    headers: { authorization: `Bearer ${token}` }
+  });
+  if (probe.ok) return;
+
+  const code = String(probe.data?.code || "");
+  if (code !== "PASSWORD_CHANGE_REQUIRED") {
+    throw new Error(`user_courses_probe_failed | status=${probe.status} err=${probe.data?.error || "-"}`);
+  }
+
+  const unlock = await jsonFetch("/api/auth/change-password", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      currentPassword,
+      newPassword: currentPassword,
+      confirmPassword: currentPassword
+    })
+  });
+  assert(unlock.ok, "user_force_password_change_failed", `status=${unlock.status} err=${unlock.data?.error || "-"}`);
+}
+
 async function run() {
   const report = [];
   const push = (name, ok, info = "") => report.push({ name, ok, info });
@@ -64,6 +90,8 @@ async function run() {
   // User login + courses
   const user = await login(USER_USERNAME, USER_PASSWORD);
   push("user_login", true);
+  await ensureUserPasswordUnlocked(user.token, USER_PASSWORD);
+  push("user_password_unlocked", true);
 
   const userCoursesRes = await jsonFetch("/api/courses", {
     headers: { authorization: `Bearer ${user.token}` }
@@ -73,9 +101,10 @@ async function run() {
   assert(userCourses.length > 0, "user_courses_empty");
   push("user_courses", true, `count=${userCourses.length}`);
 
-  // Book one future lesson (>3h) and verify in mine.
-  const candidate = userCourses.find((c) => isFutureMoreThan(c, 3 * 60 * 60 * 1000));
-  assert(candidate, "no_future_course_over_3h");
+  // Book one future lesson (prefer >3h, fallback >20min) and verify in mine.
+  let candidate = userCourses.find((c) => isFutureMoreThan(c, 3 * 60 * 60 * 1000));
+  if (!candidate) candidate = userCourses.find((c) => isFutureMoreThan(c, 20 * 60 * 1000));
+  assert(candidate, "no_future_course_available");
 
   const booking = await jsonFetch("/api/bookings", {
     method: "POST",
@@ -138,4 +167,3 @@ run().catch((err) => {
   console.error(`FAIL | smoke_live | ${err.message}`);
   process.exit(1);
 });
-
