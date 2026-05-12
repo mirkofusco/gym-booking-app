@@ -543,7 +543,8 @@ function goTo(screenId) {
 async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
   try {
-    await navigator.serviceWorker.register("/sw.js");
+    const reg = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+    await reg.update();
   } catch {
     // ignore
   }

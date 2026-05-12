@@ -1,14 +1,16 @@
-const CACHE = "easyfit-v4";
+const CACHE = "easyfit-v5";
 const ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/manifest.webmanifest", "/icons/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
+  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
   );
+  self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
@@ -19,10 +21,25 @@ self.addEventListener("fetch", (event) => {
   const isApiRequest = pathname.startsWith("/api/");
   const isAdminAsset = pathname.startsWith("/admin");
   const isCriticalAsset = pathname.endsWith(".js") || pathname.endsWith(".css") || pathname.endsWith(".html");
+  const isNavigation = event.request.mode === "navigate";
 
   // API must always be fresh (never serve stale cache for bookings/admin data).
   if (isSameOrigin && isApiRequest) {
     event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Never serve stale shell pages on iOS/Safari: navigation is always network-first.
+  if (isSameOrigin && isNavigation) {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+          return res;
+        })
+        .catch(() => caches.match(event.request))
+    );
     return;
   }
 
