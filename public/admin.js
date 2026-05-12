@@ -848,6 +848,11 @@ function renderUsersList(users) {
           <strong>${escapeHtml(user.name || user.username)}</strong>
           <p>${escapeHtml(user.username)} ${user.email ? `• ${escapeHtml(user.email)}` : ""}</p>
           <p>${user.role === "admin" ? "Admin" : "Utente"} • ${user.activeBookingsCount || 0} prenotazioni attive</p>
+          <p>Cambio password richiesto:
+            <span class="status-pill ${user.mustChangePassword ? "badge-almost" : "badge-available"}">
+              ${user.mustChangePassword ? "Sì" : "No"}
+            </span>
+          </p>
         </div>
         <div class="user-actions">
           <span class="status-pill ${user.active ? "badge-available" : "badge-inactive"}">${user.active ? "Attivo" : "Disattivo"}</span>
