@@ -896,10 +896,12 @@ function buildForwardDays(startDate, total = 8) {
 }
 
 function buildVisibleDays(anchorDate) {
+  const selectedBase = String(anchorDate || todayIso());
   const today = todayIso();
-  const base = buildForwardDays(moveDate(today, -7), 22); // 7 giorni prima + oggi + 14 avanti
-  if (!base.includes(anchorDate)) base.push(anchorDate);
-  return [...new Set(base)].sort();
+  const dates = [];
+  for (let i = -6; i <= 8; i += 1) dates.push(moveDate(selectedBase, i));
+  if (!dates.includes(today)) dates.push(today);
+  return [...new Set(dates)].sort();
 }
 
 function syncBookingsIntoCourses() {
