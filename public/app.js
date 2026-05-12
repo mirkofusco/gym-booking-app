@@ -806,17 +806,23 @@ function base64ToUint8Array(base64) {
 }
 
 function updateHomeDateLabels() {
-  const selected = new Date(`${selectedDate}T00:00:00`);
-  const pretty = new Intl.DateTimeFormat("it-IT", {
+  const today = new Date();
+  const todayPretty = new Intl.DateTimeFormat("it-IT", {
     weekday: "long",
     day: "2-digit",
     month: "long"
-  }).format(selected);
-  if (currentDateLabel) currentDateLabel.textContent = `Oggi è ${pretty}`;
+  }).format(today);
+  if (currentDateLabel) currentDateLabel.textContent = `Oggi è ${todayPretty}`;
   if (selectedDayHeading) {
+    const selected = new Date(`${selectedDate}T00:00:00`);
+    const selectedPretty = new Intl.DateTimeFormat("it-IT", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long"
+    }).format(selected);
     selectedDayHeading.textContent = selectedDate === todayIso()
       ? "Lezioni di oggi"
-      : `Lezioni di ${pretty}`;
+      : `Lezioni di ${selectedPretty}`;
   }
 }
 
