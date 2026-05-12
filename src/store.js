@@ -263,6 +263,9 @@ function migrateStore(store) {
           email: String(user.email || "").trim().toLowerCase(),
           notes: String(user.notes || "").trim(),
           notificationsEnabled: user.notificationsEnabled !== false,
+          mustChangePassword: typeof user.mustChangePassword === "boolean"
+            ? user.mustChangePassword
+            : user.role !== "admin",
           active: user.active !== false,
           updatedAt: user.updatedAt || user.createdAt || new Date().toISOString(),
           lastActivityAt: user.lastActivityAt || null

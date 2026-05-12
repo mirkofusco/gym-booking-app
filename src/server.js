@@ -76,6 +76,22 @@ async function routeApi(req, res, url) {
   const auth = await requireAuth(req, res);
   if (!auth) return;
 
+  if (req.method === "POST" && url.pathname === "/api/auth/change-password") {
+    await handleChangePassword(req, res, auth.user);
+    return;
+  }
+
+  if (
+    auth.user.mustChangePassword === true
+    && !(req.method === "GET" && url.pathname === "/api/me")
+  ) {
+    sendJson(res, 403, {
+      error: "Devi cambiare password prima di continuare.",
+      code: "PASSWORD_CHANGE_REQUIRED"
+    });
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/me") {
     sendJson(res, 200, { user: sanitizeUser(auth.user) });
     return;
@@ -410,6 +426,36 @@ async function handleLogin(req, res) {
     token,
     user: sanitizeUser(user)
   });
+}
+
+async function handleChangePassword(req, res, user) {
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+
+  const currentPassword = String(body.currentPassword || "").trim();
+  const newPassword = String(body.newPassword || "").trim();
+  const confirmPassword = String(body.confirmPassword || "").trim();
+
+  if (!currentPassword) return sendJson(res, 400, { error: "Inserisci la password attuale." });
+  if (newPassword.length < 6) return sendJson(res, 400, { error: "Nuova password minimo 6 caratteri." });
+  if (newPassword !== confirmPassword) return sendJson(res, 400, { error: "Le password non coincidono." });
+
+  const result = await mutateStore((store) => {
+    const storeUser = store.users.find((entry) => entry.id === user.id);
+    if (!storeUser) return { status: 404, error: "Utente non trovato." };
+    if (!verifyPassword(currentPassword, storeUser.passwordHash, storeUser.passwordSalt)) {
+      return { status: 401, error: "Password attuale errata." };
+    }
+    const next = hashPassword(newPassword);
+    storeUser.passwordHash = next.hash;
+    storeUser.passwordSalt = next.salt;
+    storeUser.mustChangePassword = false;
+    storeUser.updatedAt = new Date().toISOString();
+    storeUser.lastActivityAt = new Date().toISOString();
+    return { status: 200, user: sanitizeUser(storeUser) };
+  });
+
+  sendJson(res, result.status, result.user ? { user: result.user, ok: true } : { error: result.error });
 }
 
 function isDemoAdminLogin(username, password) {
@@ -1451,6 +1497,7 @@ async function handleAdminUpdateUser(req, res, userId) {
       const { hash, salt } = hashPassword(parsed.value.password);
       user.passwordHash = hash;
       user.passwordSalt = salt;
+      if (user.role !== "admin") user.mustChangePassword = true;
     }
 
     return { status: 200, user: sanitizeUser(user) };

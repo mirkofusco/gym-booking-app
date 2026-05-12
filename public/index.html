@@ -27,6 +27,21 @@
         </div>
       </section>
 
+      <section id="forcePasswordView" class="login-wrap hidden">
+        <div class="login-card-easyfit">
+          <p class="brand-title">For Fitness Club</p>
+          <p class="brand-subtitle">SICUREZZA ACCOUNT</p>
+          <h1>Cambia password al primo accesso</h1>
+          <form id="forcePasswordForm" class="login-form-easyfit">
+            <label>Password attuale<input id="currentPassword" type="password" autocomplete="current-password" required /></label>
+            <label>Nuova password<input id="newPassword" type="password" minlength="6" autocomplete="new-password" required /></label>
+            <label>Conferma nuova password<input id="confirmNewPassword" type="password" minlength="6" autocomplete="new-password" required /></label>
+            <button type="submit" class="easyfit-btn gold">Salva nuova password</button>
+            <p id="forcePasswordMsg" class="easyfit-msg"></p>
+          </form>
+        </div>
+      </section>
+
       <section id="appView" class="hidden user-v2-shell">
         <header class="user-v2-header">
           <div class="user-v2-logo">For Fitness Club</div>

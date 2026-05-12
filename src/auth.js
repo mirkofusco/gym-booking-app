@@ -24,7 +24,8 @@ export function makeUser({
   email = "",
   role,
   password,
-  notes = ""
+  notes = "",
+  mustChangePassword
 }) {
   const normalizedUsername = String(username || "").trim().toLowerCase();
   const normalizedFirstName = String(firstName || "").trim();
@@ -34,6 +35,9 @@ export function makeUser({
   ).trim();
   const normalizedEmail = String(email || "").trim().toLowerCase();
   const normalizedRole = role === "admin" ? "admin" : "user";
+  const forceChange = typeof mustChangePassword === "boolean"
+    ? mustChangePassword
+    : normalizedRole !== "admin";
   const { hash, salt } = hashPassword(password);
   const now = new Date().toISOString();
 
@@ -47,6 +51,7 @@ export function makeUser({
     notes: String(notes || "").trim(),
     notificationsEnabled: true,
     role: normalizedRole,
+    mustChangePassword: forceChange,
     passwordHash: hash,
     passwordSalt: salt,
     active: true,
@@ -67,6 +72,7 @@ export function sanitizeUser(user) {
     notes: user.notes || "",
     notificationsEnabled: user.notificationsEnabled !== false,
     role: user.role,
+    mustChangePassword: user.mustChangePassword === true,
     active: user.active,
     createdAt: user.createdAt || null,
     updatedAt: user.updatedAt || null,

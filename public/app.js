@@ -1,7 +1,10 @@
 const loginView = document.getElementById("loginView");
+const forcePasswordView = document.getElementById("forcePasswordView");
 const appView = document.getElementById("appView");
 const loginForm = document.getElementById("loginForm");
 const loginMsg = document.getElementById("loginMsg");
+const forcePasswordForm = document.getElementById("forcePasswordForm");
+const forcePasswordMsg = document.getElementById("forcePasswordMsg");
 
 const headerTitle = document.getElementById("headerTitle");
 const headerProfileBtn = document.getElementById("headerProfileBtn");
@@ -46,6 +49,7 @@ let activeScreen = "screenHome";
 let historyExpanded = false;
 let pollTimer = null;
 const seenNotificationIds = new Set();
+let forcePasswordMode = false;
 
 if (session?.token) void bootApp();
 window.addEventListener("pageshow", () => {
@@ -74,6 +78,44 @@ loginForm.addEventListener("submit", async (event) => {
     await bootApp();
   } catch {
     setEasyMsg(loginMsg, "Server non raggiungibile.", "error");
+  }
+});
+
+forcePasswordForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!session?.token) return;
+  const currentPassword = String(document.getElementById("currentPassword").value || "").trim();
+  const newPassword = String(document.getElementById("newPassword").value || "").trim();
+  const confirmPassword = String(document.getElementById("confirmNewPassword").value || "").trim();
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    setEasyMsg(forcePasswordMsg, "Compila tutti i campi.", "error");
+    return;
+  }
+  if (newPassword.length < 6) {
+    setEasyMsg(forcePasswordMsg, "Nuova password minimo 6 caratteri.", "error");
+    return;
+  }
+  if (newPassword !== confirmPassword) {
+    setEasyMsg(forcePasswordMsg, "Le password non coincidono.", "error");
+    return;
+  }
+  setEasyMsg(forcePasswordMsg, "Aggiornamento password...", "");
+  try {
+    const data = await apiFetch("/api/auth/change-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
+    });
+    if (data.user) {
+      session.user = data.user;
+      saveSession(session);
+    }
+    setEasyMsg(forcePasswordMsg, "Password aggiornata con successo.", "success");
+    forcePasswordMode = false;
+    forcePasswordView.classList.add("hidden");
+    await bootApp();
+  } catch (error) {
+    setEasyMsg(forcePasswordMsg, error.message || "Cambio password non riuscito.", "error");
   }
 });
 
@@ -189,11 +231,19 @@ window.addEventListener("keydown", (event) => {
 
 async function bootApp() {
   loginView.classList.add("hidden");
+  forcePasswordView.classList.add("hidden");
   appView.classList.remove("hidden");
   try {
     const me = await apiFetch("/api/me");
     session.user = me.user;
     saveSession(session);
+    if (session.user?.mustChangePassword) {
+      forcePasswordMode = true;
+      appView.classList.add("hidden");
+      forcePasswordView.classList.remove("hidden");
+      setEasyMsg(forcePasswordMsg, "Per sicurezza devi impostare una nuova password.", "");
+      return;
+    }
     welcomeTitle.textContent = `Ciao ${session.user.firstName || session.user.name} 👋`;
     profileName.textContent = `${session.user.name} • @${session.user.username}`;
     updateHomeDateLabels();
@@ -210,6 +260,7 @@ async function bootApp() {
 
 async function logout() {
   if (pollTimer) clearInterval(pollTimer);
+  forcePasswordMode = false;
   await apiFetch("/api/auth/logout", { method: "POST" }, false);
   clearSession();
   location.reload();
@@ -608,6 +659,13 @@ async function apiFetch(url, options = {}, throwOnError = true) {
   const headers = { ...(options.headers || {}), authorization: `Bearer ${session?.token || ""}` };
   const response = await fetch(url, { ...options, headers });
   const data = await response.json().catch(() => ({}));
+  if (response.status === 403 && data?.code === "PASSWORD_CHANGE_REQUIRED") {
+    forcePasswordMode = true;
+    appView.classList.add("hidden");
+    loginView.classList.add("hidden");
+    forcePasswordView.classList.remove("hidden");
+    setEasyMsg(forcePasswordMsg, data.error || "Cambio password obbligatorio.", "error");
+  }
   if (!response.ok && throwOnError) {
     const detail = data?.cancelDeadline ? ` Puoi annullare entro ${formatDateTime(data.cancelDeadline)}.` : "";
     throw new Error((data.error || "Richiesta fallita.") + detail);
