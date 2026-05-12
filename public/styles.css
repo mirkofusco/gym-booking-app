@@ -1467,6 +1467,64 @@ body {
   margin-bottom: 10px;
 }
 
+.notify-users-chips {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.notify-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #c8d6f2;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #1a376d;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 4px 10px;
+}
+
+.notify-chip button {
+  border: 0;
+  background: transparent;
+  color: #355a9d;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0;
+  line-height: 1;
+}
+
+.notify-users-suggestions {
+  margin-top: 8px;
+  border: 1px solid #d2def5;
+  border-radius: 10px;
+  background: #fff;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.notify-users-suggestions button {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #edf2fc;
+  background: #fff;
+  text-align: left;
+  padding: 8px 10px;
+  cursor: pointer;
+  color: #1d2f52;
+}
+
+.notify-users-suggestions button:last-child {
+  border-bottom: 0;
+}
+
+.notify-users-suggestions button:hover {
+  background: #f4f8ff;
+}
+
 .user-editor-panel,
 .user-bookings-panel {
   margin-top: 12px;

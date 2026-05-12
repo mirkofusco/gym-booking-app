@@ -49,6 +49,8 @@ const notifyCourseWrap = document.getElementById("notifyCourseWrap");
 const notifyCourseId = document.getElementById("notifyCourseId");
 const notifyUsersWrap = document.getElementById("notifyUsersWrap");
 const notifyUsersInput = document.getElementById("notifyUsersInput");
+const notifyUsersChips = document.getElementById("notifyUsersChips");
+const notifyUsersSuggestions = document.getElementById("notifyUsersSuggestions");
 const notifyTitle = document.getElementById("notifyTitle");
 const notifyMessage = document.getElementById("notifyMessage");
 const notifyResetBtn = document.getElementById("notifyResetBtn");
@@ -140,6 +142,7 @@ let todayUserFilter = "";
 let todayFilterResolvedIds = null;
 let todayFilterResolveTimer = null;
 let notifyEnabled = true;
+let notifySelectedUsernames = [];
 
 if (session?.token) {
   void bootAdmin();
@@ -410,6 +413,14 @@ newUserBtn.addEventListener("click", () => {
 
 usersSearchInput.addEventListener("input", () => renderUsersList(adminUsers));
 notifyMode?.addEventListener("change", updateNotifyModeUI);
+notifyUsersInput?.addEventListener("input", renderNotifyUserSuggestions);
+notifyUsersInput?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  const first = notifyUsersSuggestions?.querySelector("button[data-username]");
+  if (!first) return;
+  event.preventDefault();
+  addNotifyUsername(first.dataset.username || "");
+});
 notifyResetBtn?.addEventListener("click", resetNotifyForm);
 closeUserEditorBtn.addEventListener("click", closeUserEditor);
 closeUserBookingsBtn.addEventListener("click", closeUserBookings);
@@ -985,12 +996,12 @@ function renderUsersList(users) {
 }
 
 function resolveNotifyUserIds() {
-  const raw = String(notifyUsersInput?.value || "");
-  if (!raw.trim()) return [];
-  const wanted = raw
+  const typed = String(notifyUsersInput?.value || "")
     .split(",")
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
+  const wanted = [...new Set([...notifySelectedUsernames, ...typed])];
+  if (!wanted.length) return [];
   const set = new Set(wanted);
   return adminUsers
     .filter((user) => user.role !== "admin" && user.active !== false && set.has(String(user.username || "").toLowerCase()))
@@ -1015,13 +1026,95 @@ function updateNotifyModeUI() {
   const mode = String(notifyMode?.value || "all");
   notifyUsersWrap?.classList.toggle("hidden", mode !== "users");
   notifyCourseWrap?.classList.toggle("hidden", mode !== "course");
+  if (mode !== "users") {
+    if (notifyUsersSuggestions) notifyUsersSuggestions.classList.add("hidden");
+  } else {
+    renderNotifyUserChips();
+    renderNotifyUserSuggestions();
+  }
 }
 
 function resetNotifyForm() {
   if (!notifyForm) return;
   notifyForm.reset();
+  notifySelectedUsernames = [];
   updateNotifyModeUI();
+  renderNotifyUserChips();
+  renderNotifyUserSuggestions();
   setMessage(notifyMsg, "", "");
+}
+
+function renderNotifyUserChips() {
+  if (!notifyUsersChips) return;
+  if (!notifySelectedUsernames.length) {
+    notifyUsersChips.innerHTML = "";
+    return;
+  }
+  notifyUsersChips.innerHTML = notifySelectedUsernames
+    .map((username) => `
+      <span class="notify-chip">
+        @${escapeHtml(username)}
+        <button type="button" data-chip-remove="${escapeHtml(username)}">×</button>
+      </span>
+    `)
+    .join("");
+  notifyUsersChips.querySelectorAll("[data-chip-remove]").forEach((button) => {
+    button.addEventListener("click", () => removeNotifyUsername(button.dataset.chipRemove || ""));
+  });
+}
+
+function renderNotifyUserSuggestions() {
+  if (!notifyUsersSuggestions || !notifyUsersInput) return;
+  const mode = String(notifyMode?.value || "all");
+  if (mode !== "users") {
+    notifyUsersSuggestions.classList.add("hidden");
+    return;
+  }
+  const q = String(notifyUsersInput.value || "").trim().toLowerCase();
+  if (q.length < 1) {
+    notifyUsersSuggestions.classList.add("hidden");
+    notifyUsersSuggestions.innerHTML = "";
+    return;
+  }
+  const list = adminUsers
+    .filter((user) => user.role !== "admin" && user.active !== false)
+    .filter((user) => !notifySelectedUsernames.includes(String(user.username || "").toLowerCase()))
+    .filter((user) => {
+      const username = String(user.username || "").toLowerCase();
+      const name = String(user.name || "").toLowerCase();
+      return username.includes(q) || name.includes(q);
+    })
+    .slice(0, 8);
+  if (!list.length) {
+    notifyUsersSuggestions.classList.add("hidden");
+    notifyUsersSuggestions.innerHTML = "";
+    return;
+  }
+  notifyUsersSuggestions.innerHTML = list
+    .map((user) => `<button type="button" data-username="${escapeHtml(user.username)}">${escapeHtml(user.name || user.username)} • @${escapeHtml(user.username)}</button>`)
+    .join("");
+  notifyUsersSuggestions.classList.remove("hidden");
+  notifyUsersSuggestions.querySelectorAll("button[data-username]").forEach((button) => {
+    button.addEventListener("click", () => addNotifyUsername(button.dataset.username || ""));
+  });
+}
+
+function addNotifyUsername(usernameRaw) {
+  const username = String(usernameRaw || "").trim().toLowerCase();
+  if (!username) return;
+  if (!notifySelectedUsernames.includes(username)) {
+    notifySelectedUsernames.push(username);
+  }
+  if (notifyUsersInput) notifyUsersInput.value = "";
+  renderNotifyUserChips();
+  renderNotifyUserSuggestions();
+}
+
+function removeNotifyUsername(usernameRaw) {
+  const username = String(usernameRaw || "").trim().toLowerCase();
+  notifySelectedUsernames = notifySelectedUsernames.filter((item) => item !== username);
+  renderNotifyUserChips();
+  renderNotifyUserSuggestions();
 }
 
 function openUserEditor(user = null) {
