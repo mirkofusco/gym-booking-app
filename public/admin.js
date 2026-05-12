@@ -44,6 +44,7 @@ const usersCountBadge = document.getElementById("usersCountBadge");
 const newUserBtn = document.getElementById("newUserBtn");
 const usersSearchInput = document.getElementById("usersSearchInput");
 const notifyForm = document.getElementById("notifyForm");
+const forceAppUpdateBtn = document.getElementById("forceAppUpdateBtn");
 const notifyMode = document.getElementById("notifyMode");
 const notifyCourseWrap = document.getElementById("notifyCourseWrap");
 const notifyCourseId = document.getElementById("notifyCourseId");
@@ -413,6 +414,29 @@ newUserBtn.addEventListener("click", () => {
 
 usersSearchInput.addEventListener("input", () => renderUsersList(adminUsers));
 notifyMode?.addEventListener("change", updateNotifyModeUI);
+forceAppUpdateBtn?.addEventListener("click", async () => {
+  const message = window.prompt(
+    "Messaggio aggiornamento da inviare a tutti gli utenti:",
+    "Aggiornamento disponibile. Tocca Aggiorna ora."
+  );
+  if (message === null) return;
+  const text = String(message || "").trim();
+  if (!text) {
+    setMessage(notifyMsg, "Messaggio aggiornamento vuoto.", "error");
+    return;
+  }
+  try {
+    await apiFetch("/api/admin/app/force-update", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: text })
+    });
+    showToast("Aggiornamento forzato inviato", "success");
+    setMessage(notifyMsg, "Richiesta aggiornamento inviata a tutti gli utenti.", "success");
+  } catch (error) {
+    setMessage(notifyMsg, error.message || "Invio aggiornamento non riuscito.", "error");
+  }
+});
 notifyUsersInput?.addEventListener("input", renderNotifyUserSuggestions);
 notifyUsersInput?.addEventListener("keydown", (event) => {
   if (event.key !== "Enter") return;

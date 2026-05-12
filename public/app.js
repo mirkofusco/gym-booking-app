@@ -37,10 +37,14 @@ const confirmBookingBtn = document.getElementById("confirmBookingBtn");
 const closeBookingConfirmBtn = document.getElementById("closeBookingConfirmBtn");
 const bookingMsg = document.getElementById("bookingMsg");
 const toastStack = document.getElementById("toastStack");
+const forceUpdateModal = document.getElementById("forceUpdateModal");
+const forceUpdateMessage = document.getElementById("forceUpdateMessage");
+const forceUpdateNowBtn = document.getElementById("forceUpdateNowBtn");
 
 const bottomNavButtons = [...document.querySelectorAll(".user-bottom-nav button")];
 const screens = ["screenHome", "screenLessons", "screenBookings", "screenProfile"];
 const storageKey = "easyfit_session";
+const appUpdateSeenKey = "easyfit_seen_update_token";
 
 let session = readSession();
 let allCourses = [];
@@ -53,6 +57,7 @@ let historyExpanded = false;
 let pollTimer = null;
 const seenNotificationIds = new Set();
 let forcePasswordMode = false;
+let forceUpdateRequired = false;
 
 if (session?.token) void bootApp();
 ensureDayNavControls();
@@ -258,6 +263,9 @@ confirmBookingBtn.addEventListener("click", async () => {
   }
 });
 closeBookingConfirmBtn.addEventListener("click", () => closeModal(bookingConfirmModal));
+forceUpdateNowBtn?.addEventListener("click", async () => {
+  await performForcedUpdateNow();
+});
 
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeModal(bookingConfirmModal);
@@ -283,6 +291,7 @@ async function bootApp() {
     updateHomeDateLabels();
 
     await registerServiceWorker();
+    await checkForcedUpdateStatus();
     await Promise.all([loadCourses(), loadBookings(), loadNotifications()]);
     goTo("screenHome");
     startNotificationPolling();
@@ -661,7 +670,9 @@ async function sendTestNotification() {
 function startNotificationPolling() {
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
+    if (forceUpdateRequired) return;
     try {
+      await checkForcedUpdateStatus(false);
       const data = await apiFetch("/api/notifications", {}, false);
       const incoming = data.notifications || [];
       for (const item of incoming) {
@@ -717,6 +728,42 @@ async function apiFetch(url, options = {}, throwOnError = true) {
     throw new Error((data.error || "Richiesta fallita.") + detail);
   }
   return data;
+}
+
+async function checkForcedUpdateStatus(showBlocking = true) {
+  if (!session?.token) return false;
+  const status = await apiFetch("/api/app/update-status", {}, false);
+  const token = String(status.token || "");
+  if (!token) return false;
+  const seen = String(localStorage.getItem(appUpdateSeenKey) || "");
+  if (seen === token) return false;
+  forceUpdateRequired = true;
+  if (!showBlocking) return true;
+  if (forceUpdateMessage) {
+    forceUpdateMessage.textContent = String(status.message || "È disponibile una nuova versione dell'app.");
+  }
+  openModal(forceUpdateModal);
+  return true;
+}
+
+async function performForcedUpdateNow() {
+  try {
+    const status = await apiFetch("/api/app/update-status", {}, false);
+    const token = String(status.token || "");
+    if (token) localStorage.setItem(appUpdateSeenKey, token);
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+    }
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+  } catch (error) {
+    console.warn("[APP] forced update cleanup failed", error);
+  } finally {
+    location.reload();
+  }
 }
 
 function hardResetToLogin(message = "") {

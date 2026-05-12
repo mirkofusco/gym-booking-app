@@ -128,6 +128,11 @@ async function routeApi(req, res, url) {
     return;
   }
 
+  if (req.method === "GET" && url.pathname === "/api/app/update-status") {
+    await handleAppUpdateStatus(req, res);
+    return;
+  }
+
   if (req.method === "POST" && url.pathname === "/api/notifications/subscription") {
     await handleSaveNotificationSubscription(req, res, auth.user);
     return;
@@ -273,6 +278,11 @@ async function routeApi(req, res, url) {
 
     if (req.method === "POST" && url.pathname === "/api/admin/notifications/broadcast") {
       await handleAdminBroadcastNotification(req, res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/app/force-update") {
+      await handleAdminForceAppUpdate(req, res);
       return;
     }
 
@@ -807,6 +817,20 @@ async function handleSendTestNotification(_req, res, user) {
   sendJson(res, result.status, { notification: result.notification });
 }
 
+async function handleAppUpdateStatus(_req, res) {
+  const store = await readStore();
+  const appUpdate = store.appUpdate || {
+    token: "init",
+    message: "Nuova versione disponibile.",
+    updatedAt: new Date().toISOString()
+  };
+  sendJson(res, 200, {
+    token: String(appUpdate.token || "init"),
+    message: String(appUpdate.message || "Nuova versione disponibile."),
+    updatedAt: String(appUpdate.updatedAt || new Date().toISOString())
+  });
+}
+
 async function handleAdminNotificationSettings(_req, res) {
   const store = await readStore();
   const users = (store.users || []).filter((user) => user.role === "user" && user.active !== false);
@@ -910,6 +934,36 @@ async function handleAdminBroadcastNotification(req, res) {
   sendJson(res, result.status, result.ok ? { ok: true, sent: result.sent } : { error: result.error });
   if (result.ok) {
     broadcastAdminRealtime("notification_sent", { sent: result.sent });
+  }
+}
+
+async function handleAdminForceAppUpdate(req, res) {
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const message = String(body.message || "").trim() || "Aggiornamento disponibile. Tocca Aggiorna ora.";
+  if (message.length > 300) {
+    sendJson(res, 400, { error: "Messaggio troppo lungo (max 300)." });
+    return;
+  }
+
+  const result = await mutateStore((store) => {
+    const now = new Date().toISOString();
+    store.appUpdate = {
+      token: `${Date.now()}-${randomUUID().slice(0, 8)}`,
+      message,
+      updatedAt: now
+    };
+    notifyAllActiveUsers(store, {
+      type: "app_update",
+      title: "Aggiornamento app",
+      message
+    });
+    return { status: 200, ok: true, appUpdate: store.appUpdate };
+  });
+
+  sendJson(res, result.status, result.ok ? { ok: true, appUpdate: result.appUpdate } : { error: result.error });
+  if (result.ok) {
+    broadcastAdminRealtime("app_update_forced", { token: result.appUpdate.token });
   }
 }
 

@@ -198,6 +198,11 @@ function buildSeedStore() {
 
   return {
     version: 2,
+    appUpdate: {
+      token: "init",
+      message: "Nuova versione disponibile.",
+      updatedAt: new Date().toISOString()
+    },
     users: [
       makeUser({
         username: DEFAULT_ADMIN.username,
@@ -231,6 +236,11 @@ function buildSeedStore() {
 function migrateStore(store) {
   const normalized = {
     version: 2,
+    appUpdate: {
+      token: String(store.appUpdate?.token || "init"),
+      message: String(store.appUpdate?.message || "Nuova versione disponibile."),
+      updatedAt: String(store.appUpdate?.updatedAt || new Date().toISOString())
+    },
     users: Array.isArray(store.users) ? [...store.users] : [],
     courseTemplates: Array.isArray(store.courseTemplates) ? [...store.courseTemplates] : [],
     courses: Array.isArray(store.courses)
@@ -246,6 +256,7 @@ function migrateStore(store) {
   };
 
   let changed = false;
+  if (!store.appUpdate || !store.appUpdate.token) changed = true;
 
   normalized.users = normalized.users
     .map((user, idx) => {
