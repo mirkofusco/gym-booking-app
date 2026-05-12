@@ -56,11 +56,18 @@
           </div>
 
           <section class="day-strip-wrap">
+            <div class="day-strip-head">
+              <p id="dayRangeLabel" class="day-range-label">Settimana corrente</p>
+              <div class="day-jump">
+                <label for="dayJumpInput">Vai a data</label>
+                <input id="dayJumpInput" type="date" />
+              </div>
+            </div>
             <div id="dayStrip" class="day-strip"></div>
             <div class="day-strip-nav">
-              <button id="dayPrevBtn" class="easyfit-btn ghost compact" type="button">← Giorno</button>
+              <button id="dayPrevBtn" class="easyfit-btn ghost compact icon-only" type="button" aria-label="Giorno precedente">←</button>
               <button id="dayTodayBtn" class="easyfit-btn ghost compact" type="button">Oggi</button>
-              <button id="dayNextBtn" class="easyfit-btn ghost compact" type="button">Giorno →</button>
+              <button id="dayNextBtn" class="easyfit-btn ghost compact icon-only" type="button" aria-label="Giorno successivo">→</button>
             </div>
           </section>
 
@@ -146,6 +153,6 @@
     </section>
 
     <div id="toastStack" class="toast-stack" aria-live="polite"></div>
-    <script type="module" src="/app.js?v=20260512-4"></script>
+    <script type="module" src="/app.js?v=20260512-5"></script>
   </body>
 </html>

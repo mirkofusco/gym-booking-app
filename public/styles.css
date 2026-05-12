@@ -3031,6 +3031,43 @@ body {
   padding-bottom: 2px;
 }
 
+.day-strip-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.day-range-label {
+  margin: 0;
+  color: #d0dcf3;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.day-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.day-jump label {
+  color: #9eb0d2;
+  font-size: 0.82rem;
+}
+
+.day-jump input {
+  border: 1px solid #2e3a52;
+  border-radius: 10px;
+  background: #111827;
+  color: #dce4f6;
+  min-height: 34px;
+  padding: 0 10px;
+  font: inherit;
+}
+
 .day-strip {
   display: flex;
   gap: 8px;
@@ -3214,6 +3251,13 @@ body {
   min-height: 40px;
 }
 
+.easyfit-btn.icon-only {
+  width: 48px;
+  min-width: 48px;
+  padding: 0;
+  font-size: 1.15rem;
+}
+
 .history-list {
   display: grid;
   gap: 6px;
@@ -3261,6 +3305,17 @@ body {
 
   .welcome-title {
     font-size: 1.65rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .day-jump {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .day-jump input {
+    width: 58%;
   }
 }
 

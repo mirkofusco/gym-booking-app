@@ -16,6 +16,8 @@ const notificationState = document.getElementById("notificationState");
 const welcomeTitle = document.getElementById("welcomeTitle");
 const currentDateLabel = document.getElementById("currentDateLabel");
 const selectedDayHeading = document.getElementById("selectedDayHeading");
+const dayRangeLabel = document.getElementById("dayRangeLabel");
+const dayJumpInput = document.getElementById("dayJumpInput");
 const profileName = document.getElementById("profileName");
 const dayStrip = document.getElementById("dayStrip");
 let dayPrevBtn = document.getElementById("dayPrevBtn");
@@ -175,6 +177,15 @@ dayTodayBtn?.addEventListener("click", () => {
 
 dayNextBtn?.addEventListener("click", () => {
   selectedDate = moveDate(selectedDate, 1);
+  renderDayStrip();
+  renderCourses();
+  updateHomeDateLabels();
+});
+
+dayJumpInput?.addEventListener("change", () => {
+  const value = String(dayJumpInput.value || "").trim();
+  if (!value) return;
+  selectedDate = value;
   renderDayStrip();
   renderCourses();
   updateHomeDateLabels();
@@ -381,6 +392,8 @@ function renderDayStrip() {
       updateHomeDateLabels();
     });
   });
+  updateDayRangeLabel(dates);
+  if (dayJumpInput) dayJumpInput.value = selectedDate;
 }
 
 function renderCourses() {
@@ -945,11 +958,21 @@ function buildForwardDays(startDate, total = 8) {
 
 function buildVisibleDays(anchorDate) {
   const selectedBase = String(anchorDate || todayIso());
-  const today = todayIso();
   const dates = [];
-  for (let i = -6; i <= 8; i += 1) dates.push(moveDate(selectedBase, i));
-  if (!dates.includes(today)) dates.push(today);
+  for (let i = -3; i <= 3; i += 1) dates.push(moveDate(selectedBase, i));
   return [...new Set(dates)].sort();
+}
+
+function updateDayRangeLabel(dates) {
+  if (!dayRangeLabel) return;
+  if (!dates?.length) {
+    dayRangeLabel.textContent = "";
+    return;
+  }
+  const start = new Date(`${dates[0]}T00:00:00`);
+  const end = new Date(`${dates[dates.length - 1]}T00:00:00`);
+  const fmt = new Intl.DateTimeFormat("it-IT", { day: "2-digit", month: "short" });
+  dayRangeLabel.textContent = `${fmt.format(start)} - ${fmt.format(end)}`;
 }
 
 function ensureDayNavControls() {
