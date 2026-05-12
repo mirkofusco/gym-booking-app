@@ -3036,6 +3036,13 @@ body {
   gap: 8px;
 }
 
+.day-strip-nav {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .day-pill {
   min-width: 86px;
   border: 1px solid #2a3448;

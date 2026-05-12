@@ -18,6 +18,9 @@ const currentDateLabel = document.getElementById("currentDateLabel");
 const selectedDayHeading = document.getElementById("selectedDayHeading");
 const profileName = document.getElementById("profileName");
 const dayStrip = document.getElementById("dayStrip");
+const dayPrevBtn = document.getElementById("dayPrevBtn");
+const dayTodayBtn = document.getElementById("dayTodayBtn");
+const dayNextBtn = document.getElementById("dayNextBtn");
 const coursesList = document.getElementById("coursesList");
 const coursesMsg = document.getElementById("coursesMsg");
 const upcomingBookingsList = document.getElementById("upcomingBookingsList") || document.getElementById("bookingsList");
@@ -148,6 +151,27 @@ bottomNavButtons.forEach((button) => {
     if (target === "screenProfile") await loadNotifications();
     goTo(target);
   });
+});
+
+dayPrevBtn?.addEventListener("click", () => {
+  selectedDate = moveDate(selectedDate, -1);
+  renderDayStrip();
+  renderCourses();
+  updateHomeDateLabels();
+});
+
+dayTodayBtn?.addEventListener("click", () => {
+  selectedDate = todayIso();
+  renderDayStrip();
+  renderCourses();
+  updateHomeDateLabels();
+});
+
+dayNextBtn?.addEventListener("click", () => {
+  selectedDate = moveDate(selectedDate, 1);
+  renderDayStrip();
+  renderCourses();
+  updateHomeDateLabels();
 });
 
 confirmBookingBtn.addEventListener("click", async () => {
@@ -321,7 +345,7 @@ async function loadNotifications() {
 }
 
 function renderDayStrip() {
-  const dates = buildForwardDays(selectedDate, 8);
+  const dates = buildVisibleDays(selectedDate);
   if (!dates.length) {
     dayStrip.innerHTML = "<p class='panel-sub'>Nessuna data disponibile.</p>";
     return;
@@ -869,6 +893,13 @@ function buildForwardDays(startDate, total = 8) {
   const out = [];
   for (let i = 0; i < total; i += 1) out.push(moveDate(startDate, i));
   return out;
+}
+
+function buildVisibleDays(anchorDate) {
+  const today = todayIso();
+  const base = buildForwardDays(moveDate(today, -7), 22); // 7 giorni prima + oggi + 14 avanti
+  if (!base.includes(anchorDate)) base.push(anchorDate);
+  return [...new Set(base)].sort();
 }
 
 function syncBookingsIntoCourses() {
