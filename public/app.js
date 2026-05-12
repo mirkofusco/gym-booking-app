@@ -18,9 +18,9 @@ const currentDateLabel = document.getElementById("currentDateLabel");
 const selectedDayHeading = document.getElementById("selectedDayHeading");
 const profileName = document.getElementById("profileName");
 const dayStrip = document.getElementById("dayStrip");
-const dayPrevBtn = document.getElementById("dayPrevBtn");
-const dayTodayBtn = document.getElementById("dayTodayBtn");
-const dayNextBtn = document.getElementById("dayNextBtn");
+let dayPrevBtn = document.getElementById("dayPrevBtn");
+let dayTodayBtn = document.getElementById("dayTodayBtn");
+let dayNextBtn = document.getElementById("dayNextBtn");
 const coursesList = document.getElementById("coursesList");
 const coursesMsg = document.getElementById("coursesMsg");
 const upcomingBookingsList = document.getElementById("upcomingBookingsList") || document.getElementById("bookingsList");
@@ -55,6 +55,7 @@ const seenNotificationIds = new Set();
 let forcePasswordMode = false;
 
 if (session?.token) void bootApp();
+ensureDayNavControls();
 window.addEventListener("error", (event) => {
   console.error("[APP] runtime error", event.error || event.message);
   hardResetToLogin("Si è verificato un errore. Riprova ad accedere.");
@@ -902,6 +903,44 @@ function buildVisibleDays(anchorDate) {
   for (let i = -6; i <= 8; i += 1) dates.push(moveDate(selectedBase, i));
   if (!dates.includes(today)) dates.push(today);
   return [...new Set(dates)].sort();
+}
+
+function ensureDayNavControls() {
+  if (dayPrevBtn && dayTodayBtn && dayNextBtn) return;
+  const wrap = document.querySelector(".day-strip-wrap");
+  if (!wrap) return;
+
+  let nav = wrap.querySelector(".day-strip-nav");
+  if (!nav) {
+    nav = document.createElement("div");
+    nav.className = "day-strip-nav";
+    wrap.appendChild(nav);
+  }
+
+  if (!dayPrevBtn) {
+    dayPrevBtn = document.createElement("button");
+    dayPrevBtn.id = "dayPrevBtn";
+    dayPrevBtn.type = "button";
+    dayPrevBtn.className = "easyfit-btn ghost compact";
+    dayPrevBtn.textContent = "← Giorno";
+    nav.appendChild(dayPrevBtn);
+  }
+  if (!dayTodayBtn) {
+    dayTodayBtn = document.createElement("button");
+    dayTodayBtn.id = "dayTodayBtn";
+    dayTodayBtn.type = "button";
+    dayTodayBtn.className = "easyfit-btn ghost compact";
+    dayTodayBtn.textContent = "Oggi";
+    nav.appendChild(dayTodayBtn);
+  }
+  if (!dayNextBtn) {
+    dayNextBtn = document.createElement("button");
+    dayNextBtn.id = "dayNextBtn";
+    dayNextBtn.type = "button";
+    dayNextBtn.className = "easyfit-btn ghost compact";
+    dayNextBtn.textContent = "Giorno →";
+    nav.appendChild(dayNextBtn);
+  }
 }
 
 function syncBookingsIntoCourses() {
