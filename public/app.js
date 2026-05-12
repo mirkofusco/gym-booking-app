@@ -376,9 +376,10 @@ function renderDayStrip() {
     const d = new Date(`${date}T00:00:00`);
     const dayName = new Intl.DateTimeFormat("it-IT", { weekday: "short" }).format(d).toUpperCase();
     const dayNum = new Intl.DateTimeFormat("it-IT", { day: "2-digit" }).format(d);
+    const isToday = date === todayIso();
     return `
       <button type="button" class="day-pill ${date === selectedDate ? "active" : ""}" data-date="${date}">
-        <span>${dayName}</span>
+        <span>${dayName}${isToday ? " · OGGI" : ""}</span>
         <strong>${dayNum}</strong>
         <small>${count} corsi</small>
       </button>
@@ -903,11 +904,12 @@ function updateHomeDateLabels() {
     const selectedPretty = new Intl.DateTimeFormat("it-IT", {
       weekday: "long",
       day: "2-digit",
-      month: "long"
+      month: "long",
+      year: "numeric"
     }).format(selected);
     selectedDayHeading.textContent = selectedDate === todayIso()
-      ? "Lezioni di oggi"
-      : `Lezioni di ${selectedPretty}`;
+      ? `Stai vedendo: OGGI • ${selectedPretty}`
+      : `Stai vedendo: ${selectedPretty}`;
   }
 }
 

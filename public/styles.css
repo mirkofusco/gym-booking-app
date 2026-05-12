@@ -317,8 +317,14 @@ body {
 
 .screen-title.compact {
   text-align: left;
-  font-size: 1.2rem;
+  font-size: 1rem;
   margin: 4px 0 6px;
+  border: 1px solid #2a3d60;
+  border-radius: 999px;
+  display: inline-block;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, rgba(28, 40, 63, 0.75), rgba(18, 27, 42, 0.85));
+  color: #e7eefc;
 }
 
 .week-strip {
@@ -3084,16 +3090,23 @@ body {
   min-width: 86px;
   border: 1px solid #2a3448;
   border-radius: 12px;
-  background: #121a27;
+  background: linear-gradient(180deg, #121a27, #0f1724);
   color: #dce5f9;
   padding: 8px;
   display: grid;
   text-align: center;
   gap: 2px;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+.day-pill:hover {
+  transform: translateY(-1px);
+  border-color: #415477;
+  box-shadow: 0 8px 18px rgba(5, 10, 20, 0.35);
 }
 
 .day-pill strong {
-  font-size: 1.1rem;
+  font-size: 1.14rem;
 }
 
 .day-pill small {
@@ -3105,6 +3118,7 @@ body {
   background: linear-gradient(180deg, #e1c27e, #c89f59);
   color: #2a1d12;
   border-color: transparent;
+  box-shadow: 0 10px 24px rgba(200, 159, 89, 0.38);
 }
 
 .day-pill.active small {
@@ -3146,17 +3160,22 @@ body {
 }
 
 .course-card-v2.compact-card {
-  padding: 10px 12px;
+  padding: 12px 12px;
+  border-color: #31415f;
+  box-shadow: 0 14px 30px rgba(7, 12, 22, 0.34);
 }
 
 .course-card-v2 h3,
 .course-card-v2 h4 {
-  margin: 0 0 6px;
+  margin: 0 0 5px;
+  font-size: 1.18rem;
+  letter-spacing: 0.01em;
 }
 
 .course-card-v2 p {
-  margin: 3px 0;
+  margin: 4px 0;
   color: #c4d0e7;
+  font-size: 0.98rem;
 }
 
 .course-card-v2.unread {
@@ -3180,7 +3199,11 @@ body {
 }
 
 .course-actions {
-  margin-top: 8px;
+  margin-top: 10px;
+}
+
+.course-actions .easyfit-btn {
+  width: 100%;
 }
 
 .course-action-stack {
