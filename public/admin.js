@@ -40,6 +40,7 @@ const weekSummaryList = document.getElementById("weekSummaryList");
 
 const usersMsg = document.getElementById("usersMsg");
 const usersList = document.getElementById("usersList");
+const usersCountBadge = document.getElementById("usersCountBadge");
 const newUserBtn = document.getElementById("newUserBtn");
 const usersSearchInput = document.getElementById("usersSearchInput");
 const userEditorPanel = document.getElementById("userEditorPanel");
@@ -830,6 +831,12 @@ async function loadUsers() {
 }
 
 function renderUsersList(users) {
+  const allUsers = users.filter((user) => user.role !== "admin");
+  const activeUsers = allUsers.filter((user) => user.active !== false);
+  if (usersCountBadge) {
+    usersCountBadge.textContent = `Iscritti app: ${allUsers.length} • Attivi: ${activeUsers.length}`;
+  }
+
   const search = String(usersSearchInput.value || "").trim().toLowerCase();
   const items = users.filter((user) => {
     if (!search) return true;

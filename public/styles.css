@@ -1438,8 +1438,9 @@ body {
 .users-toolbar {
   display: grid;
   gap: 10px;
-  grid-template-columns: 180px 1fr;
+  grid-template-columns: 180px 1fr auto;
   margin-bottom: 10px;
+  align-items: center;
 }
 
 .users-toolbar input {
@@ -1447,6 +1448,19 @@ body {
   border: 1px solid #d5e0f5;
   border-radius: 10px;
   padding: 0 10px;
+}
+
+.users-count-badge {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid #cddaf4;
+  border-radius: 12px;
+  background: #eef4ff;
+  color: #19386f;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .user-editor-panel,
@@ -3740,6 +3754,46 @@ body {
   box-shadow: 0 28px 58px -30px rgba(16, 28, 57, 0.56);
 }
 
+/* Improve contrast in user modal editor */
+#userEditorPanel,
+#userBookingsPanel {
+  background: #ffffff;
+  color: #15233f;
+}
+
+#userEditorPanel .section-head h3,
+#userBookingsPanel .section-head h3 {
+  color: #15233f;
+}
+
+#userEditorPanel.form-grid label,
+#userEditorPanel .form-grid label,
+#userBookingsPanel .form-grid label,
+#userEditorPanel label,
+#userBookingsPanel label {
+  color: #1f2d4a;
+  font-weight: 700;
+}
+
+#userEditorPanel input,
+#userEditorPanel select,
+#userEditorPanel textarea,
+#userBookingsPanel input,
+#userBookingsPanel select,
+#userBookingsPanel textarea {
+  color: #0f172a;
+  background: #ffffff;
+  border-color: #bfcce4;
+}
+
+#userEditorPanel input::placeholder,
+#userBookingsPanel input::placeholder,
+#userEditorPanel textarea::placeholder,
+#userBookingsPanel textarea::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+
 .admin-v5-floating-panel::before {
   content: "";
   position: fixed;
@@ -3796,6 +3850,15 @@ body.modal-open {
     border: 0;
     background: transparent;
     overflow: visible;
+  }
+
+  .users-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .users-count-badge {
+    width: 100%;
+    justify-content: center;
   }
 
   .types-table {
