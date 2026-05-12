@@ -6,7 +6,7 @@
     <title>For Fitness Club Booking</title>
     <meta name="theme-color" content="#0b0f16" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="stylesheet" href="/styles.css?v=20260512-6" />
+    <link rel="stylesheet" href="/styles.css?v=20260512-7" />
   </head>
   <body class="app-theme-darkgold user-v2-body">
     <main>
@@ -44,9 +44,12 @@
 
       <section id="appView" class="hidden user-v2-shell">
         <header class="user-v2-header">
-          <div class="user-v2-logo">For Fitness Club</div>
+          <div class="user-v2-brand">
+            <span class="user-v2-brand-dot" aria-hidden="true"></span>
+            <div class="user-v2-logo">For Fitness Club</div>
+          </div>
           <div id="headerTitle" class="user-v2-page-title">Home</div>
-          <button id="headerProfileBtn" class="user-icon-btn" type="button" aria-label="Profilo">👤</button>
+          <button id="headerProfileBtn" class="user-icon-btn" type="button" aria-label="Profilo">PF</button>
         </header>
 
         <section id="screenHome" class="user-screen active">
@@ -153,6 +156,6 @@
     </section>
 
     <div id="toastStack" class="toast-stack" aria-live="polite"></div>
-    <script type="module" src="/app.js?v=20260512-6"></script>
+    <script type="module" src="/app.js?v=20260512-7"></script>
   </body>
 </html>
