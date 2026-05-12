@@ -1463,6 +1463,10 @@ body {
   white-space: nowrap;
 }
 
+.notify-panel {
+  margin-bottom: 10px;
+}
+
 .user-editor-panel,
 .user-bookings-panel {
   margin-top: 12px;

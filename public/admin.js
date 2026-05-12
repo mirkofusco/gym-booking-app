@@ -43,6 +43,16 @@ const usersList = document.getElementById("usersList");
 const usersCountBadge = document.getElementById("usersCountBadge");
 const newUserBtn = document.getElementById("newUserBtn");
 const usersSearchInput = document.getElementById("usersSearchInput");
+const notifyForm = document.getElementById("notifyForm");
+const notifyMode = document.getElementById("notifyMode");
+const notifyCourseWrap = document.getElementById("notifyCourseWrap");
+const notifyCourseId = document.getElementById("notifyCourseId");
+const notifyUsersWrap = document.getElementById("notifyUsersWrap");
+const notifyUsersInput = document.getElementById("notifyUsersInput");
+const notifyTitle = document.getElementById("notifyTitle");
+const notifyMessage = document.getElementById("notifyMessage");
+const notifyResetBtn = document.getElementById("notifyResetBtn");
+const notifyMsg = document.getElementById("notifyMsg");
 const userEditorPanel = document.getElementById("userEditorPanel");
 const userBookingsPanel = document.getElementById("userBookingsPanel");
 const closeUserEditorBtn = document.getElementById("closeUserEditorBtn");
@@ -129,6 +139,7 @@ let adminEventsConnected = false;
 let todayUserFilter = "";
 let todayFilterResolvedIds = null;
 let todayFilterResolveTimer = null;
+let notifyEnabled = true;
 
 if (session?.token) {
   void bootAdmin();
@@ -398,6 +409,8 @@ newUserBtn.addEventListener("click", () => {
 });
 
 usersSearchInput.addEventListener("input", () => renderUsersList(adminUsers));
+notifyMode?.addEventListener("change", updateNotifyModeUI);
+notifyResetBtn?.addEventListener("click", resetNotifyForm);
 closeUserEditorBtn.addEventListener("click", closeUserEditor);
 closeUserBookingsBtn.addEventListener("click", closeUserBookings);
 resetUserBtn.addEventListener("click", resetUserForm);
@@ -434,6 +447,44 @@ userForm.addEventListener("submit", async (event) => {
     closeUserEditor();
   } catch (error) {
     setMessage(usersMsg, error.message || "Operazione utente non riuscita.", "error");
+  }
+});
+
+notifyForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!notifyEnabled) {
+    setMessage(notifyMsg, "Invio notifiche manuale disattivato.", "error");
+    return;
+  }
+  const mode = String(notifyMode.value || "all");
+  const title = String(notifyTitle.value || "").trim();
+  const message = String(notifyMessage.value || "").trim();
+  const userIds = mode === "users"
+    ? resolveNotifyUserIds()
+    : [];
+  const courseId = mode === "course" ? String(notifyCourseId.value || "").trim() : "";
+
+  if (mode === "users" && !userIds.length) {
+    setMessage(notifyMsg, "Inserisci almeno uno username valido.", "error");
+    return;
+  }
+  if (mode === "course" && !courseId) {
+    setMessage(notifyMsg, "Seleziona un corso.", "error");
+    return;
+  }
+
+  try {
+    const data = await apiFetch("/api/admin/notifications/broadcast", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ mode, title, message, userIds, courseId })
+    });
+    setMessage(notifyMsg, `Notifica inviata a ${Number(data.sent || 0)} utenti.`, "success");
+    showToast(`Notifica inviata (${Number(data.sent || 0)})`, "success");
+    notifyTitle.value = "";
+    notifyMessage.value = "";
+  } catch (error) {
+    setMessage(notifyMsg, error.message || "Invio notifica non riuscito.", "error");
   }
 });
 
@@ -549,7 +600,7 @@ function setActiveTab(tab) {
 }
 
 async function refreshAdminData() {
-  await Promise.all([loadDashboard(), loadWeekCourses(), loadCoursesDay(), loadCourseTemplates()]);
+  await Promise.all([loadDashboard(), loadWeekCourses(), loadCoursesDay(), loadCourseTemplates(), loadNotificationSettings()]);
   updateDateLabel();
   updateLastSyncLabel();
   renderKpis();
@@ -560,6 +611,8 @@ async function refreshAdminData() {
   renderCalendarTab();
   populateCourseTemplateSelect();
   buildMonthFilterOptions();
+  renderNotifyCourseOptions();
+  updateNotifyModeUI();
 }
 
 async function loadDashboard() {
@@ -585,6 +638,16 @@ async function loadCoursesDay() {
 async function loadCourseTemplates() {
   const data = await apiFetch("/api/admin/course-templates");
   courseTemplates = data.templates || [];
+}
+
+async function loadNotificationSettings() {
+  const data = await apiFetch("/api/admin/notifications/settings", {}, false);
+  notifyEnabled = data.enabled !== false;
+  if (!notifyEnabled) {
+    setMessage(notifyMsg, "Invio notifiche manuale disattivato da configurazione.", "error");
+  } else if (notifyMsg && !notifyMsg.textContent) {
+    setMessage(notifyMsg, "", "");
+  }
 }
 
 function setCourseManageTab(tab) {
@@ -919,6 +982,46 @@ function renderUsersList(users) {
       }
     });
   });
+}
+
+function resolveNotifyUserIds() {
+  const raw = String(notifyUsersInput?.value || "");
+  if (!raw.trim()) return [];
+  const wanted = raw
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+  const set = new Set(wanted);
+  return adminUsers
+    .filter((user) => user.role !== "admin" && user.active !== false && set.has(String(user.username || "").toLowerCase()))
+    .map((user) => user.id);
+}
+
+function renderNotifyCourseOptions() {
+  if (!notifyCourseId) return;
+  const nowKey = todayIso();
+  const options = allCourses
+    .filter((course) => course.isActive && course.date >= nowKey)
+    .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
+    .slice(0, 200)
+    .map((course) => `
+      <option value="${escapeHtml(course.id)}">${escapeHtml(course.date)} • ${escapeHtml(course.startTime)} - ${escapeHtml(course.title)} (${course.bookedCount}/${course.capacity})</option>
+    `)
+    .join("");
+  notifyCourseId.innerHTML = `<option value="">Seleziona corso</option>${options}`;
+}
+
+function updateNotifyModeUI() {
+  const mode = String(notifyMode?.value || "all");
+  notifyUsersWrap?.classList.toggle("hidden", mode !== "users");
+  notifyCourseWrap?.classList.toggle("hidden", mode !== "course");
+}
+
+function resetNotifyForm() {
+  if (!notifyForm) return;
+  notifyForm.reset();
+  updateNotifyModeUI();
+  setMessage(notifyMsg, "", "");
 }
 
 function openUserEditor(user = null) {

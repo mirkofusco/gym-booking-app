@@ -266,6 +266,16 @@ async function routeApi(req, res, url) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/admin/notifications/settings") {
+      await handleAdminNotificationSettings(req, res);
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/notifications/broadcast") {
+      await handleAdminBroadcastNotification(req, res);
+      return;
+    }
+
     if (req.method === "GET" && url.pathname.startsWith("/api/admin/users/") && url.pathname.endsWith("/bookings")) {
       const userId = url.pathname.split("/")[4];
       await handleAdminUserBookings(req, res, userId);
@@ -795,6 +805,112 @@ async function handleSendTestNotification(_req, res, user) {
     return { status: 200, notification };
   });
   sendJson(res, result.status, { notification: result.notification });
+}
+
+async function handleAdminNotificationSettings(_req, res) {
+  const store = await readStore();
+  const users = (store.users || []).filter((user) => user.role === "user" && user.active !== false);
+  const courses = enrichCourses(store)
+    .filter((course) => course.isActive)
+    .sort(sortCourses)
+    .slice(0, 300)
+    .map((course) => ({
+      id: course.id,
+      title: course.title,
+      date: course.date,
+      startTime: course.startTime,
+      endTime: course.endTime,
+      bookedCount: course.bookedCount,
+      capacity: course.capacity
+    }));
+
+  sendJson(res, 200, {
+    enabled: APP_CONFIG.notifyBroadcastEnabled,
+    users: users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      name: user.name || user.username
+    })),
+    courses
+  });
+}
+
+async function handleAdminBroadcastNotification(req, res) {
+  if (!APP_CONFIG.notifyBroadcastEnabled) {
+    sendJson(res, 403, { error: "Invio notifiche manuale temporaneamente disattivato." });
+    return;
+  }
+
+  const body = await readJsonBody(req, res);
+  if (!body) return;
+  const title = String(body.title || "").trim();
+  const message = String(body.message || "").trim();
+  const mode = String(body.mode || "").trim();
+  const userIds = Array.isArray(body.userIds) ? body.userIds.map((id) => String(id || "").trim()).filter(Boolean) : [];
+  const courseId = String(body.courseId || "").trim();
+
+  if (!title) return sendJson(res, 400, { error: "Titolo notifica obbligatorio." });
+  if (!message) return sendJson(res, 400, { error: "Messaggio notifica obbligatorio." });
+  if (title.length > 80) return sendJson(res, 400, { error: "Titolo troppo lungo (max 80)." });
+  if (message.length > 300) return sendJson(res, 400, { error: "Messaggio troppo lungo (max 300)." });
+  if (!["all", "users", "course"].includes(mode)) return sendJson(res, 400, { error: "Modalita invio non valida." });
+
+  const result = await mutateStore((store) => {
+    const recipients = new Set();
+    const usersById = new Map((store.users || []).map((entry) => [entry.id, entry]));
+
+    if (mode === "all") {
+      for (const user of store.users || []) {
+        if (user.role === "user" && user.active !== false) recipients.add(user.id);
+      }
+    }
+
+    if (mode === "users") {
+      for (const id of userIds) {
+        const user = usersById.get(id);
+        if (user && user.role === "user" && user.active !== false) recipients.add(id);
+      }
+    }
+
+    if (mode === "course") {
+      if (!courseId) return { status: 400, error: "Seleziona un corso per questa modalita." };
+      const course = (store.courses || []).find((entry) => entry.id === courseId);
+      if (!course) return { status: 404, error: "Corso non trovato." };
+      for (const booking of store.bookings || []) {
+        if (booking.courseId !== courseId || booking.status !== "active") continue;
+        const user = usersById.get(booking.userId);
+        if (user && user.role === "user" && user.active !== false) recipients.add(user.id);
+      }
+    }
+
+    if (!recipients.size) return { status: 409, error: "Nessun destinatario valido trovato." };
+
+    const createdAt = new Date().toISOString();
+    for (const userId of recipients) {
+      createNotification(store, {
+        userId,
+        type: "admin_broadcast",
+        title,
+        message
+      });
+      const user = usersById.get(userId);
+      if (user) {
+        user.lastActivityAt = user.lastActivityAt || createdAt;
+        user.updatedAt = createdAt;
+      }
+    }
+
+    return {
+      status: 200,
+      ok: true,
+      sent: recipients.size
+    };
+  });
+
+  sendJson(res, result.status, result.ok ? { ok: true, sent: result.sent } : { error: result.error });
+  if (result.ok) {
+    broadcastAdminRealtime("notification_sent", { sent: result.sent });
+  }
 }
 
 async function handleAdminCourses(_req, res, url) {

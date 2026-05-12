@@ -96,6 +96,41 @@
             <input id="usersSearchInput" type="search" placeholder="Cerca nome, username o email" />
             <div id="usersCountBadge" class="users-count-badge" aria-live="polite">Iscritti app: --</div>
           </div>
+          <section class="admin-v5-panel notify-panel">
+            <div class="section-head">
+              <h3>Invio notifiche</h3>
+            </div>
+            <form id="notifyForm" class="form-grid form-compact">
+              <div class="grid-2">
+                <label>Destinatari
+                  <select id="notifyMode">
+                    <option value="all">Tutti gli iscritti attivi</option>
+                    <option value="users">Utenti selezionati</option>
+                    <option value="course">Iscritti a un corso</option>
+                  </select>
+                </label>
+                <label id="notifyCourseWrap" class="hidden">Corso
+                  <select id="notifyCourseId"></select>
+                </label>
+              </div>
+              <label id="notifyUsersWrap" class="hidden">Utenti (separati da virgola, username)
+                <input id="notifyUsersInput" placeholder="es. alessandra.conto, marco.necci" />
+              </label>
+              <div class="grid-2">
+                <label>Titolo
+                  <input id="notifyTitle" maxlength="80" placeholder="Comunicazione palestra" required />
+                </label>
+                <label>Messaggio
+                  <input id="notifyMessage" maxlength="300" placeholder="Testo notifica..." required />
+                </label>
+              </div>
+              <div class="row-buttons">
+                <button type="submit" class="btn btn-primary">Invia notifica</button>
+                <button id="notifyResetBtn" type="button" class="btn btn-ghost">Reset</button>
+              </div>
+            </form>
+            <p id="notifyMsg" class="message"></p>
+          </section>
           <p id="usersMsg" class="message"></p>
           <div id="usersList" class="admin-v5-users-list"></div>
 
