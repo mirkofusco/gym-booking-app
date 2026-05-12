@@ -420,7 +420,7 @@ function renderCourses() {
 
   coursesList.innerHTML = rows.map((course) => {
     const action = actionForCourse(course);
-    const statusLine = `${Math.max(0, course.spotsLeft)}/${course.capacity} posti`;
+    const statusLine = `${Math.max(0, course.spotsLeft)} posti liberi su ${course.capacity}`;
     const stateLabel = course.isBooked
       ? "Prenotato"
       : course.spotsLeft <= 0
