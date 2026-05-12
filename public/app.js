@@ -52,6 +52,15 @@ const seenNotificationIds = new Set();
 let forcePasswordMode = false;
 
 if (session?.token) void bootApp();
+window.addEventListener("error", (event) => {
+  console.error("[APP] runtime error", event.error || event.message);
+  hardResetToLogin("Si è verificato un errore. Riprova ad accedere.");
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("[APP] unhandled rejection", event.reason);
+  hardResetToLogin("Connessione instabile o sessione non valida. Accedi di nuovo.");
+});
 window.addEventListener("pageshow", () => {
   const usernameInput = document.getElementById("username");
   const passwordInput = document.getElementById("password");
@@ -253,15 +262,20 @@ async function bootApp() {
     goTo("screenHome");
     startNotificationPolling();
     await refreshNotificationState();
-  } catch {
-    await logout();
+  } catch (error) {
+    console.error("[APP] boot failed", error);
+    hardResetToLogin("Sessione non valida o dati non disponibili. Accedi di nuovo.");
   }
 }
 
 async function logout() {
   if (pollTimer) clearInterval(pollTimer);
   forcePasswordMode = false;
-  await apiFetch("/api/auth/logout", { method: "POST" }, false);
+  try {
+    await apiFetch("/api/auth/logout", { method: "POST" }, false);
+  } catch (error) {
+    console.warn("[APP] logout endpoint failed", error);
+  }
   clearSession();
   location.reload();
 }
@@ -657,7 +671,13 @@ async function showBrowserNotification(title, body) {
 
 async function apiFetch(url, options = {}, throwOnError = true) {
   const headers = { ...(options.headers || {}), authorization: `Bearer ${session?.token || ""}` };
-  const response = await fetch(url, { ...options, headers });
+  let response;
+  try {
+    response = await fetch(url, { ...options, headers, cache: "no-store" });
+  } catch (networkError) {
+    if (throwOnError) throw new Error("Connessione al server non disponibile.");
+    return {};
+  }
   const data = await response.json().catch(() => ({}));
   if (response.status === 403 && data?.code === "PASSWORD_CHANGE_REQUIRED") {
     forcePasswordMode = true;
@@ -671,6 +691,20 @@ async function apiFetch(url, options = {}, throwOnError = true) {
     throw new Error((data.error || "Richiesta fallita.") + detail);
   }
   return data;
+}
+
+function hardResetToLogin(message = "") {
+  clearSession();
+  session = null;
+  forcePasswordMode = false;
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+  appView.classList.add("hidden");
+  forcePasswordView.classList.add("hidden");
+  loginView.classList.remove("hidden");
+  if (message) setEasyMsg(loginMsg, message, "error");
 }
 
 function openModal(node) {
