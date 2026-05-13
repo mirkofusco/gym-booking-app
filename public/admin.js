@@ -930,9 +930,9 @@ async function loadUsers() {
 
 function renderUsersList(users) {
   const allUsers = users.filter((user) => user.role !== "admin");
-  const activeUsers = allUsers.filter((user) => user.active !== false);
+  const activeUsers = allUsers.filter((user) => user.active !== false && Boolean(user.lastActivityAt));
   if (usersCountBadge) {
-    usersCountBadge.textContent = `Iscritti app: ${allUsers.length} • Attivi: ${activeUsers.length}`;
+    usersCountBadge.textContent = `Iscritti app: ${allUsers.length} • Attivi (almeno 1 accesso): ${activeUsers.length}`;
   }
 
   const search = String(usersSearchInput.value || "").trim().toLowerCase();
@@ -953,6 +953,7 @@ function renderUsersList(users) {
           <strong>${escapeHtml(user.name || user.username)}</strong>
           <p>${escapeHtml(user.username)} ${user.email ? `• ${escapeHtml(user.email)}` : ""}</p>
           <p>${user.role === "admin" ? "Admin" : "Utente"} • ${user.activeBookingsCount || 0} prenotazioni attive</p>
+          <p>Ultimo accesso: ${user.lastActivityAt ? escapeHtml(formatDateTime(user.lastActivityAt)) : "mai entrato"}</p>
           <p>Cambio password richiesto:
             <span class="status-pill ${user.mustChangePassword ? "badge-almost" : "badge-available"}">
               ${user.mustChangePassword ? "Sì" : "No"}
