@@ -930,9 +930,13 @@ async function loadUsers() {
 
 function renderUsersList(users) {
   const allUsers = users.filter((user) => user.role !== "admin");
-  const activeUsers = allUsers.filter((user) => user.active !== false && Boolean(user.lastActivityAt));
+  const activeUsers = allUsers.filter(
+    (user) => user.active !== false
+      && user.mustChangePassword !== true
+      && Boolean(user.lastActivityAt)
+  );
   if (usersCountBadge) {
-    usersCountBadge.textContent = `Iscritti app: ${allUsers.length} • Attivi (almeno 1 accesso): ${activeUsers.length}`;
+    usersCountBadge.textContent = `Iscritti app: ${allUsers.length} • Accesso completato: ${activeUsers.length}`;
   }
 
   const search = String(usersSearchInput.value || "").trim().toLowerCase();
