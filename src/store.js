@@ -97,13 +97,18 @@ async function getPool() {
   if (!USE_DATABASE) return null;
   if (!poolPromise) {
     poolPromise = import("pg").then(({ Pool }) => {
+      const parsed = parseDatabaseUrl(DATABASE_URL);
       const pool = new Pool({
-      connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-      max: Number(process.env.PG_POOL_MAX || 10),
-      idleTimeoutMillis: Number(process.env.PG_IDLE_TIMEOUT_MS || 30000),
-      connectionTimeoutMillis: Number(process.env.PG_CONNECT_TIMEOUT_MS || 10000),
-      keepAlive: true
+        host: parsed.host,
+        port: parsed.port,
+        user: parsed.user,
+        password: parsed.password,
+        database: parsed.database,
+        ssl: { rejectUnauthorized: false },
+        max: Number(process.env.PG_POOL_MAX || 10),
+        idleTimeoutMillis: Number(process.env.PG_IDLE_TIMEOUT_MS || 30000),
+        connectionTimeoutMillis: Number(process.env.PG_CONNECT_TIMEOUT_MS || 10000),
+        keepAlive: true
       });
       pool.on("error", (error) => {
         console.error("pg_pool_error", error?.message || error);
@@ -154,6 +159,17 @@ async function dbQuery(sql, params = []) {
     }
   }
   throw lastError;
+}
+
+function parseDatabaseUrl(raw) {
+  const url = new URL(String(raw || "").trim());
+  return {
+    host: url.hostname,
+    port: Number(url.port || 5432),
+    user: decodeURIComponent(url.username || ""),
+    password: decodeURIComponent(url.password || ""),
+    database: String(url.pathname || "/postgres").replace(/^\//, "") || "postgres"
+  };
 }
 
 async function readDbStore() {
