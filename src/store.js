@@ -9,11 +9,11 @@ let mutationQueue = Promise.resolve();
 const DATABASE_URL = String(process.env.DATABASE_URL || "").trim();
 const USE_DATABASE = Boolean(DATABASE_URL);
 let poolPromise = null;
+const DB_QUERY_MAX_RETRIES = 2;
 
 export async function ensureStore() {
   if (USE_DATABASE) {
-    const pool = await getPool();
-    await pool.query(`
+    await dbQuery(`
       create table if not exists app_store (
         id smallint primary key,
         data jsonb not null,
@@ -96,24 +96,74 @@ export async function mutateStore(mutator) {
 async function getPool() {
   if (!USE_DATABASE) return null;
   if (!poolPromise) {
-    poolPromise = import("pg").then(({ Pool }) => new Pool({
+    poolPromise = import("pg").then(({ Pool }) => {
+      const pool = new Pool({
       connectionString: DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
-    }));
+      ssl: { rejectUnauthorized: false },
+      max: Number(process.env.PG_POOL_MAX || 10),
+      idleTimeoutMillis: Number(process.env.PG_IDLE_TIMEOUT_MS || 30000),
+      connectionTimeoutMillis: Number(process.env.PG_CONNECT_TIMEOUT_MS || 10000),
+      keepAlive: true
+      });
+      pool.on("error", (error) => {
+        console.error("pg_pool_error", error?.message || error);
+      });
+      return pool;
+    });
   }
   return poolPromise;
 }
 
+async function resetPool() {
+  if (!poolPromise) return;
+  try {
+    const pool = await poolPromise;
+    await pool.end();
+  } catch {
+    // ignore pool close errors
+  } finally {
+    poolPromise = null;
+  }
+}
+
+function isRetryableDbError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    message.includes("connection terminated unexpectedly")
+    || message.includes("terminating connection")
+    || message.includes("connection reset")
+    || message.includes("connection refused")
+    || message.includes("could not connect")
+    || message.includes("connection timeout")
+    || message.includes("the database system is starting up")
+    || message.includes("server closed the connection unexpectedly")
+  );
+}
+
+async function dbQuery(sql, params = []) {
+  let lastError = null;
+  for (let attempt = 0; attempt <= DB_QUERY_MAX_RETRIES; attempt += 1) {
+    try {
+      const pool = await getPool();
+      return await pool.query(sql, params);
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableDbError(error) || attempt === DB_QUERY_MAX_RETRIES) break;
+      await resetPool();
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 async function readDbStore() {
-  const pool = await getPool();
-  const result = await pool.query("select data from app_store where id = 1");
+  const result = await dbQuery("select data from app_store where id = 1");
   if (!result.rows.length) return null;
   return result.rows[0].data;
 }
 
 async function writeDbStore(store) {
-  const pool = await getPool();
-  await pool.query(
+  await dbQuery(
     `insert into app_store (id, data, updated_at)
      values (1, $1::jsonb, now())
      on conflict (id)
