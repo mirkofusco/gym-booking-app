@@ -416,6 +416,9 @@ function migrateStore(store) {
   normalized.courseTemplates = normalizeCourseTemplatesList(
     normalized.courseTemplates.length ? normalized.courseTemplates : defaultCourseTemplates()
   );
+  const templateById = new Map(
+    normalized.courseTemplates.map((template) => [String(template.id || "").trim(), template])
+  );
   const usageByTemplate = new Map();
   for (const course of normalized.courses) {
     const templateId = String(course.courseTemplateId || "").trim();
@@ -437,6 +440,22 @@ function migrateStore(store) {
   if (!Array.isArray(store.courseTemplates) || !store.courseTemplates.length) {
     changed = true;
   }
+
+  // Keep lesson title coherent with selected course template.
+  // This auto-heals old rows where the template is correct but title remained stale.
+  normalized.courses = normalized.courses.map((course) => {
+    const templateId = String(course.courseTemplateId || "").trim();
+    if (!templateId) return course;
+    const template = templateById.get(templateId);
+    if (!template) return course;
+    if (course.title === template.name) return course;
+    changed = true;
+    return {
+      ...course,
+      title: template.name,
+      updatedAt: new Date().toISOString()
+    };
+  });
 
   normalized.bookings = normalized.bookings.map((booking) => {
     if (!booking.status || !("attendanceStatus" in booking)) changed = true;

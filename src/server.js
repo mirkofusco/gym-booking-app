@@ -1877,6 +1877,9 @@ function enrichCourses(store, userId = "") {
   const activeCounts = new Map();
   const userBooked = new Set();
   const userWaitlisted = new Set();
+  const templateById = new Map(
+    (store.courseTemplates || []).map((template) => [String(template.id || "").trim(), template])
+  );
 
   for (const booking of store.bookings) {
     if (booking.status !== "active") continue;
@@ -1895,9 +1898,12 @@ function enrichCourses(store, userId = "") {
     const spotsLeft = Math.max(0, course.capacity - bookedCount);
     const isBooked = userBooked.has(course.id);
     const status = displayStatus({ isBooked, spotsLeft, capacity: course.capacity });
+    const template = templateById.get(String(course.courseTemplateId || "").trim());
+    const resolvedTitle = template?.name || course.title;
 
     return {
       ...course,
+      title: resolvedTitle,
       typeLabel: COURSE_TYPES[course.type]?.label || course.type,
       bookedCount,
       spotsLeft,
