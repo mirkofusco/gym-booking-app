@@ -419,6 +419,9 @@ function migrateStore(store) {
   const templateById = new Map(
     normalized.courseTemplates.map((template) => [String(template.id || "").trim(), template])
   );
+  const templateIdByName = new Map(
+    normalized.courseTemplates.map((template) => [String(template.name || "").trim().toUpperCase(), String(template.id || "").trim()])
+  );
   const usageByTemplate = new Map();
   for (const course of normalized.courses) {
     const templateId = String(course.courseTemplateId || "").trim();
@@ -444,6 +447,26 @@ function migrateStore(store) {
   // Keep lesson title coherent with selected course template.
   // This auto-heals old rows where the template is correct but title remained stale.
   normalized.courses = normalized.courses.map((course) => {
+    const isLegacyCalisthenicsSlot = (
+      String(course.title || "").trim().toUpperCase() === "FUNZIONALE"
+      && Number(course.capacity) === 25
+      && String(course.startTime || "") === "19:00"
+      && String(course.endTime || "") === "20:00"
+    );
+    if (isLegacyCalisthenicsSlot) {
+      const caliTemplateId = templateIdByName.get("CALISTHENICS");
+      if (caliTemplateId) {
+        changed = true;
+        return {
+          ...course,
+          courseTemplateId: caliTemplateId,
+          title: "CALISTHENICS",
+          type: "sala",
+          updatedAt: new Date().toISOString()
+        };
+      }
+    }
+
     const templateId = String(course.courseTemplateId || "").trim();
     if (!templateId) return course;
     const template = templateById.get(templateId);
