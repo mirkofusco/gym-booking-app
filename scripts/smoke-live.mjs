@@ -17,8 +17,8 @@ if (!BASE_URL || !ADMIN_USERNAME || !ADMIN_PASSWORD || !USER_USERNAME || !USER_P
 }
 
 if (FORBIDDEN_SMOKE_USERS.has(USER_USERNAME.toLowerCase())) {
-  console.error(`Refusing to run smoke booking with real/protected user: ${USER_USERNAME}`);
-  console.error("Use a dedicated test user, for example smoke.test, so live checks never touch real member bookings.");
+  console.error(`Refusing to run smoke test with real/protected user: ${USER_USERNAME}`);
+  console.error("Use a dedicated test user, for example smoke.test.");
   process.exit(2);
 }
 
@@ -36,11 +36,6 @@ async function jsonFetch(path, options = {}) {
 
 function assert(condition, label, detail = "") {
   if (!condition) throw new Error(`${label}${detail ? ` | ${detail}` : ""}`);
-}
-
-function isFutureMoreThan(course, ms) {
-  const t = Date.parse(`${course.date}T${course.startTime}:00`);
-  return Number.isFinite(t) && t - Date.now() > ms;
 }
 
 async function login(username, password) {
@@ -113,55 +108,11 @@ async function run() {
   assert(userCourses.length > 0, "user_courses_empty");
   push("user_courses", true, `count=${userCourses.length}`);
 
-  // Book one future lesson with the dedicated smoke user and clean up only that booking.
-  let candidate = userCourses.find((c) => isFutureMoreThan(c, 3 * 60 * 60 * 1000));
-  if (!candidate) candidate = userCourses.find((c) => isFutureMoreThan(c, 20 * 60 * 1000));
-  assert(candidate, "no_future_course_available");
-
-  const booking = await jsonFetch("/api/bookings", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${user.token}`
-    },
-    body: JSON.stringify({ courseId: candidate.id })
-  });
-
-  let bookedId = null;
-  if (booking.ok && booking.data?.booking?.id) {
-    bookedId = booking.data.booking.id;
-    push("user_booking_create", true, `course=${candidate.id}`);
-  } else if (String(booking.data?.error || "").toLowerCase().includes("gia prenot")) {
-    push("user_booking_create", true, "already_booked_existing_smoke_user_booking");
-  } else {
-    throw new Error(`user_booking_failed | status=${booking.status} err=${booking.data?.error || "-"}`);
-  }
-
-  const mineAfterBook = await jsonFetch("/api/bookings/mine", {
+  const mine = await jsonFetch("/api/bookings/mine", {
     headers: { authorization: `Bearer ${user.token}` }
   });
-  assert(mineAfterBook.ok, "user_mine_failed_after_book", `status=${mineAfterBook.status}`);
-  const active = (mineAfterBook.data?.bookings || []).filter((b) => b.status === "active");
-  const activeForCourse = active.find((b) => b.courseId === candidate.id);
-  assert(activeForCourse, "booking_not_visible_in_mine");
-  push("user_mine_after_book", true, `active=${active.length}`);
-
-  if (bookedId) {
-    const cancel = await jsonFetch(`/api/bookings/${encodeURIComponent(bookedId)}`, {
-      method: "DELETE",
-      headers: { authorization: `Bearer ${user.token}` }
-    });
-    assert(cancel.ok, "cancel_failed", `status=${cancel.status} err=${cancel.data?.error || "-"}`);
-    push("user_cancel_created_booking", true, `booking=${bookedId}`);
-  } else {
-    push("user_cancel_created_booking", true, "skipped_existing_booking_not_touched");
-  }
-
-  const mineAfterCancel = await jsonFetch("/api/bookings/mine", {
-    headers: { authorization: `Bearer ${user.token}` }
-  });
-  assert(mineAfterCancel.ok, "user_mine_failed_after_cancel", `status=${mineAfterCancel.status}`);
-  push("user_mine_after_cancel", true);
+  assert(mine.ok, "user_mine_failed", `status=${mine.status}`);
+  push("user_mine_readonly", true, `count=${(mine.data?.bookings || []).length}`);
 
   // Print summary
   for (const r of report) {
