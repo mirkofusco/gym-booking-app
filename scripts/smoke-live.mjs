@@ -3,10 +3,22 @@ const ADMIN_USERNAME = String(process.env.SMOKE_ADMIN_USERNAME || "").trim();
 const ADMIN_PASSWORD = String(process.env.SMOKE_ADMIN_PASSWORD || "").trim();
 const USER_USERNAME = String(process.env.SMOKE_USER_USERNAME || "").trim();
 const USER_PASSWORD = String(process.env.SMOKE_USER_PASSWORD || "").trim();
+const FORBIDDEN_SMOKE_USERS = new Set([
+  "mirko",
+  "mirko.fusco",
+  "mirkofusco",
+  "admin"
+]);
 
 if (!BASE_URL || !ADMIN_USERNAME || !ADMIN_PASSWORD || !USER_USERNAME || !USER_PASSWORD) {
   console.error("Missing required env vars:");
   console.error("SMOKE_BASE_URL, SMOKE_ADMIN_USERNAME, SMOKE_ADMIN_PASSWORD, SMOKE_USER_USERNAME, SMOKE_USER_PASSWORD");
+  process.exit(2);
+}
+
+if (FORBIDDEN_SMOKE_USERS.has(USER_USERNAME.toLowerCase())) {
+  console.error(`Refusing to run smoke booking with real/protected user: ${USER_USERNAME}`);
+  console.error("Use a dedicated test user, for example smoke.test, so live checks never touch real member bookings.");
   process.exit(2);
 }
 
@@ -101,7 +113,7 @@ async function run() {
   assert(userCourses.length > 0, "user_courses_empty");
   push("user_courses", true, `count=${userCourses.length}`);
 
-  // Book one future lesson (prefer >3h, fallback >20min) and verify in mine.
+  // Book one future lesson with the dedicated smoke user and clean up only that booking.
   let candidate = userCourses.find((c) => isFutureMoreThan(c, 3 * 60 * 60 * 1000));
   if (!candidate) candidate = userCourses.find((c) => isFutureMoreThan(c, 20 * 60 * 1000));
   assert(candidate, "no_future_course_available");
@@ -120,7 +132,7 @@ async function run() {
     bookedId = booking.data.booking.id;
     push("user_booking_create", true, `course=${candidate.id}`);
   } else if (String(booking.data?.error || "").toLowerCase().includes("gia prenot")) {
-    push("user_booking_create", true, "already_booked");
+    push("user_booking_create", true, "already_booked_existing_smoke_user_booking");
   } else {
     throw new Error(`user_booking_failed | status=${booking.status} err=${booking.data?.error || "-"}`);
   }
@@ -134,21 +146,15 @@ async function run() {
   assert(activeForCourse, "booking_not_visible_in_mine");
   push("user_mine_after_book", true, `active=${active.length}`);
 
-  // Cancel only if cancellable (>2h).
-  const cancellable = active.find((b) => {
-    const t = Date.parse(`${b.course?.date}T${b.course?.startTime}:00`);
-    return Number.isFinite(t) && t - Date.now() > 2 * 60 * 60 * 1000 + 5 * 60 * 1000;
-  });
-
-  if (cancellable) {
-    const cancel = await jsonFetch(`/api/bookings/${encodeURIComponent(cancellable.id)}`, {
+  if (bookedId) {
+    const cancel = await jsonFetch(`/api/bookings/${encodeURIComponent(bookedId)}`, {
       method: "DELETE",
       headers: { authorization: `Bearer ${user.token}` }
     });
     assert(cancel.ok, "cancel_failed", `status=${cancel.status} err=${cancel.data?.error || "-"}`);
-    push("user_cancel", true, `booking=${cancellable.id}`);
+    push("user_cancel_created_booking", true, `booking=${bookedId}`);
   } else {
-    push("user_cancel", true, "skipped_no_cancellable_booking");
+    push("user_cancel_created_booking", true, "skipped_existing_booking_not_touched");
   }
 
   const mineAfterCancel = await jsonFetch("/api/bookings/mine", {
