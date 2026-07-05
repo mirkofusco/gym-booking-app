@@ -13,6 +13,15 @@ export function canCancelBooking(course, now = new Date()) {
   return now < cancellationDeadline(course);
 }
 
+export function bookingDeadline(course) {
+  const start = courseDateTime(course);
+  return new Date(start.getTime() - APP_CONFIG.bookingCloseMinutesBeforeStart * 60 * 1000);
+}
+
+export function canBookCourse(course, now = new Date()) {
+  return now < bookingDeadline(course);
+}
+
 export function occupancyStatus(spotsLeft, capacity) {
   if (spotsLeft <= 0) return "completo";
   if (spotsLeft <= Math.max(2, Math.ceil(capacity * 0.2))) return "quasi_pieno";

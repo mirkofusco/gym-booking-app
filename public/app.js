@@ -491,6 +491,14 @@ function actionForCourse(course) {
     if (course.isInWaitlist) return `<button class="easyfit-btn dark" disabled type="button">In lista attesa</button>`;
     return `<button class="easyfit-btn dark" disabled type="button">Posti esauriti</button>`;
   }
+  if (course.canBook === false) {
+    return `
+      <div class="course-action-stack">
+        <button class="easyfit-btn dark" disabled type="button">Prenotazioni chiuse</button>
+        <small>Puoi prenotare fino a 1 ora prima</small>
+      </div>
+    `;
+  }
   return `<button class="easyfit-btn gold" data-book="${course.id}" type="button">Prenota</button>`;
 }
 

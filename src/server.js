@@ -13,7 +13,7 @@ import {
   sanitizeUser,
   verifyPassword
 } from "./auth.js";
-import { canCancelBooking, cancellationDeadline, displayStatus } from "./booking-rules.js";
+import { bookingDeadline, canBookCourse, canCancelBooking, cancellationDeadline, displayStatus } from "./booking-rules.js";
 import { courseTypeFallback, ensureStore, mutateStore, readStore } from "./store.js";
 
 const contentTypes = {
@@ -598,6 +598,13 @@ async function handleCreateBooking(req, res, user) {
     if (!course) return { status: 404, error: "Corso non trovato." };
     if (!course.isActive) return { status: 409, error: "Corso non attivo. Contatta la palestra." };
     if (isCoursePast(course)) return { status: 409, error: "La lezione e gia iniziata o terminata." };
+    if (!canBookCourse(course)) {
+      return {
+        status: 409,
+        error: "Prenotazioni chiuse: puoi prenotare fino a 1 ora prima dell'inizio.",
+        bookingDeadline: bookingDeadline(course).toISOString()
+      };
+    }
 
     const alreadyBooked = store.bookings.some(
       (entry) => entry.courseId === course.id && entry.userId === user.id && entry.status === "active"
@@ -648,7 +655,7 @@ async function handleCreateBooking(req, res, user) {
     };
   });
 
-  sendJson(res, result.status, result.booking ? result : { error: result.error });
+  sendJson(res, result.status, result.booking ? result : { error: result.error, bookingDeadline: result.bookingDeadline || null });
   if (result.booking) {
     broadcastAdminRealtime("booking_changed", { courseId: result.booking.courseId });
   }
@@ -1912,6 +1919,8 @@ function enrichCourses(store, userId = "") {
       isAlmostFull: spotsLeft > 0 && spotsLeft <= Math.max(2, Math.ceil(course.capacity * 0.2)),
       statusCode: status.code,
       statusLabel: status.label,
+      canBook: canBookCourse(course),
+      bookingDeadline: bookingDeadline(course).toISOString(),
       cancelDeadline: cancellationDeadline(course).toISOString()
     };
   });
