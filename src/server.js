@@ -26,7 +26,11 @@ const contentTypes = {
 };
 
 await ensureStore();
-startNotificationScheduler();
+if (APP_CONFIG.notificationSchedulerEnabled) {
+  startNotificationScheduler();
+} else {
+  console.log("Notification scheduler disabled");
+}
 const adminSseClients = new Set();
 
 const server = createServer(async (req, res) => {

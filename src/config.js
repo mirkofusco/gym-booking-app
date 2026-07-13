@@ -29,7 +29,8 @@ export const APP_CONFIG = {
   bookingCloseMinutesBeforeStart: Number(process.env.BOOKING_CLOSE_MINUTES_BEFORE_START || 60),
   maxJsonBytes: Number(process.env.MAX_JSON_BYTES || 512 * 1024),
   timezone: process.env.APP_TIMEZONE || "Europe/Rome",
-  notifyBroadcastEnabled: String(process.env.NOTIFY_BROADCAST_ENABLED || "true").toLowerCase() !== "false"
+  notifyBroadcastEnabled: String(process.env.NOTIFY_BROADCAST_ENABLED || "true").toLowerCase() !== "false",
+  notificationSchedulerEnabled: String(process.env.NOTIFICATION_SCHEDULER_ENABLED || "false").toLowerCase() === "true"
 };
 
 export const PUSH_CONFIG = {
