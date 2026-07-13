@@ -585,7 +585,7 @@ function startLiveRefresh() {
       .finally(() => {
         liveRefreshInFlight = false;
       });
-  }, 15000);
+  }, 60000);
 }
 
 function stopLiveRefresh() {

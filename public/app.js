@@ -710,7 +710,7 @@ function startNotificationPolling() {
     } catch {
       // ignore polling errors
     }
-  }, 30000);
+  }, 120000);
 }
 
 async function showBrowserNotification(title, body) {
