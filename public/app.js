@@ -714,7 +714,7 @@ function startNotificationPolling() {
   pollTimer = setInterval(async () => {
     if (forceUpdateRequired) return;
     try {
-      await checkForcedUpdateStatus(false);
+      await checkForcedUpdateStatus();
       const data = await apiFetch("/api/notifications", {}, false);
       const incoming = data.notifications || [];
       for (const item of incoming) {

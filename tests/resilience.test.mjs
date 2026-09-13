@@ -35,3 +35,8 @@ test('failed course loading displays a retry instead of no available lessons', (
   handler();
   assert.equal(retried, true);
 });
+
+test('background polling displays a newly forced app update', () => {
+  assert.match(client, /await checkForcedUpdateStatus\(\);/);
+  assert.doesNotMatch(client, /await checkForcedUpdateStatus\(false\);/);
+});
