@@ -81,7 +81,7 @@ export async function writeStore(store) {
 export async function mutateStore(mutator) {
   let output;
 
-  mutationQueue = mutationQueue.then(async () => {
+  const operation = mutationQueue.then(async () => {
     const store = await readStore();
     output = await mutator(store);
     if (!output || output.commit !== false) {
@@ -89,7 +89,9 @@ export async function mutateStore(mutator) {
     }
   });
 
-  await mutationQueue;
+  // Keep this caller’s error, but allow later operations to run.
+  mutationQueue = operation.catch(() => {});
+  await operation;
   return output;
 }
 

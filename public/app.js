@@ -50,6 +50,7 @@ const appUpdateSeenKey = "easyfit_seen_update_token";
 
 let session = readSession();
 let allCourses = [];
+let coursesLoadState = "loading";
 let myBookings = [];
 let myNotifications = [];
 let selectedDate = todayIso();
@@ -85,12 +86,12 @@ loginForm.addEventListener("submit", async (event) => {
   const username = document.getElementById("username").value.trim().toLowerCase();
   const password = document.getElementById("password").value.trim();
   try {
-    const response = await fetch("/api/auth/login", {
+    const response = await fetchWithTimeout("/api/auth/login", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ username, password })
     });
-    const data = await response.json().catch(() => ({}));
+    const data = response.data;
     if (!response.ok) return setEasyMsg(loginMsg, data.error || "Login non riuscito.", "error");
     if (data.user?.role !== "user") return setEasyMsg(loginMsg, "Account non utente.", "error");
     session = { token: data.token, user: data.user };
@@ -301,12 +302,15 @@ async function bootApp() {
     profileName.textContent = `${session.user.name} • @${session.user.username}`;
     updateHomeDateLabels();
 
-    await registerServiceWorker();
+    void registerServiceWorker();
     await checkForcedUpdateStatus();
-    await Promise.all([loadCourses(), loadBookings(), loadNotifications()]);
+    await Promise.all([loadCourses(), loadBookings()]);
+    void loadNotifications().catch((error) => console.warn("Notifications unavailable", error));
     goTo("screenHome");
     startNotificationPolling();
-    await refreshNotificationState();
+    void refreshNotificationState().catch(() => {
+      notificationState.textContent = "Notifiche temporaneamente non disponibili.";
+    });
   } catch (error) {
     console.error("[APP] boot failed", error);
     hardResetToLogin("Sessione non valida o dati non disponibili. Accedi di nuovo.");
@@ -326,10 +330,13 @@ async function logout() {
 }
 
 async function loadCourses() {
+  coursesLoadState = "loading";
   setEasyMsg(coursesMsg, "Caricamento corsi...", "");
   coursesList.innerHTML = skeletonCards(3);
   try {
     const data = await apiFetch("/api/courses");
+    if (!Array.isArray(data.courses)) throw new Error("Risposta corsi non valida. Riprova.");
+    coursesLoadState = "ready";
     allCourses = (data.courses || []).sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`));
     syncBookingsIntoCourses();
     renderDayStrip();
@@ -338,6 +345,9 @@ async function loadCourses() {
     updateHomeDateLabels();
     setEasyMsg(coursesMsg, "", "");
   } catch (error) {
+    coursesLoadState = "error";
+    renderCourses();
+    renderLessons();
     setEasyMsg(coursesMsg, error.message || "Errore caricamento corsi.", "error");
   }
 }
@@ -397,7 +407,17 @@ function renderDayStrip() {
   if (dayJumpInput) dayJumpInput.value = selectedDate;
 }
 
+function renderCourseLoadState(container) {
+  if (coursesLoadState === "ready") return false;
+  container.innerHTML = coursesLoadState === "loading"
+    ? "<p class='panel-sub'>Caricamento lezioni...</p>"
+    : "<p class='panel-sub'>Impossibile caricare le lezioni.</p><button type='button' class='easyfit-btn ghost'>Riprova</button>";
+  container.querySelector("button")?.addEventListener("click", () => void loadCourses());
+  return true;
+}
+
 function renderCourses() {
+  if (renderCourseLoadState(coursesList)) return;
   const rows = allCourses
     .filter((course) => course.date === selectedDate);
 
@@ -728,16 +748,28 @@ async function showBrowserNotification(title, body) {
   }
 }
 
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    const data = await response.json();
+    return { ok: response.ok, status: response.status, data };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function apiFetch(url, options = {}, throwOnError = true) {
   const headers = { ...(options.headers || {}), authorization: `Bearer ${session?.token || ""}` };
   let response;
   try {
-    response = await fetch(url, { ...options, headers, cache: "no-store" });
+    response = await fetchWithTimeout(url, { ...options, headers, cache: "no-store" });
   } catch (networkError) {
     if (throwOnError) throw new Error("Connessione al server non disponibile.");
     return {};
   }
-  const data = await response.json().catch(() => ({}));
+  const data = response.data;
   if (response.status === 403 && data?.code === "PASSWORD_CHANGE_REQUIRED") {
     forcePasswordMode = true;
     appView.classList.add("hidden");
@@ -1064,6 +1096,7 @@ function formatHistoryDate(dateKey) {
 }
 
 function renderLessons() {
+  if (lessonsList && renderCourseLoadState(lessonsList)) return;
   if (!lessonsList) return;
   const upcoming = allCourses
     .filter((course) => course.isActive !== false && courseStart(course) >= new Date())
