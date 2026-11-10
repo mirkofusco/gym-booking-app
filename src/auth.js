@@ -80,16 +80,18 @@ export function sanitizeUser(user) {
   };
 }
 
-export function createSession(userId) {
+export function createSession(userId, role = "user") {
   const now = Date.now();
+  const ttlMs = role === "admin" ? APP_CONFIG.sessionTtlMs : APP_CONFIG.userSessionTtlMs;
   const token = signSessionToken({
     u: String(userId),
-    exp: now + APP_CONFIG.sessionTtlMs
+    iat: now,
+    exp: now + ttlMs
   });
   sessions.set(token, {
     userId,
     createdAt: now,
-    expiresAt: now + APP_CONFIG.sessionTtlMs
+    expiresAt: now + ttlMs
   });
   return token;
 }
@@ -154,7 +156,12 @@ function verifySessionToken(token) {
     const userId = String(parsed?.u || "").trim();
     const exp = Number(parsed?.exp || 0);
     if (!userId || !Number.isFinite(exp) || exp <= Date.now()) return null;
-    return { userId, expiresAt: exp, issuedAt: Math.max(0, exp - APP_CONFIG.sessionTtlMs) };
+    const issuedAt = Number(parsed?.iat);
+    return {
+      userId,
+      expiresAt: exp,
+      issuedAt: Number.isFinite(issuedAt) ? issuedAt : Math.max(0, exp - APP_CONFIG.sessionTtlMs)
+    };
   } catch {
     return null;
   }

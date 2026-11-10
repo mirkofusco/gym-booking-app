@@ -406,7 +406,7 @@ async function handleLogin(req, res) {
   if (!userByUsername) {
     if (isDemoAdminLogin(username, password)) {
       const adminUser = await ensureAdminUserForDemoLogin(password);
-      const token = createSession(adminUser.id);
+      const token = createSession(adminUser.id, "admin");
       console.info("[AUTH] login admin fallback riuscito", { username });
       sendJson(res, 200, { token, user: sanitizeUser(adminUser) });
       return;
@@ -444,7 +444,7 @@ async function handleLogin(req, res) {
     return { commit: true };
   });
 
-  const token = createSession(user.id);
+  const token = createSession(user.id, user.role);
   console.info("[AUTH] login ok", { username, role: user.role });
   sendJson(res, 200, {
     token,

@@ -12,9 +12,9 @@
         <p class="brand-title">For Fitness Club</p>
         <p class="brand-subtitle">ADMIN DASHBOARD</p>
         <h1>Accedi</h1>
-        <form id="adminLoginForm" class="form-grid">
-          <label>Username<input id="adminUsername" type="text" required autocomplete="username" /></label>
-          <label>Password<input id="adminPassword" type="password" required autocomplete="current-password" /></label>
+        <form id="adminLoginForm" class="form-grid" autocomplete="on">
+          <label>Username<input id="adminUsername" name="username" type="text" required autocomplete="username" autocapitalize="none" autocorrect="off" /></label>
+          <label>Password<input id="adminPassword" name="password" type="password" required autocomplete="current-password" /></label>
           <button type="submit" class="btn btn-primary">Entra nel pannello</button>
           <p id="adminLoginMsg" class="message"></p>
         </form>
